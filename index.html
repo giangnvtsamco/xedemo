@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1f4e8c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Xe Demo">
+<title>Xe Demo · SAMCO</title>
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&family=Tinos:ital,wght@0,400;0,700;1,400&family=Arimo:wght@400;700&display=swap">
+<link rel="stylesheet" href="https://giangnvtsamco.github.io/samco-core/style.css">
+<style>
+  [hidden]{display:none!important}
+  .xd-mine{display:flex;flex-direction:column;gap:6px;background:var(--accent-soft);border:1px solid var(--accent);border-radius:14px;padding:12px 14px}
+  .xd-mine button{display:flex;justify-content:space-between;align-items:center;gap:8px;border:0;background:none;padding:6px 0;text-align:left;cursor:pointer;font-size:14px;color:inherit;border-top:1px solid color-mix(in srgb,var(--accent) 25%,transparent)}
+  .xd-mine .sect+button{border-top:0}
+  .xd-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .xd-car{display:flex;flex-direction:column;gap:3px;background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:12px;text-align:left;cursor:pointer;min-height:84px;color:inherit}
+  .xd-car .n{font-family:var(--display);font-size:20px;line-height:1.1;text-transform:uppercase}
+  .xd-car .b{font-family:var(--mono);font-size:12px;color:var(--muted)}
+  .xd-car .s{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;margin-top:auto}
+  .xd-car .s i{width:8px;height:8px;border-radius:99px;flex-shrink:0;background:currentColor}
+  .xd-san{color:var(--ok)}.xd-di,.xd-dat{color:var(--accent)}.xd-sac,.xd-dv{color:var(--warn)}.xd-ngung{color:var(--muted)}
+  .xd-sec{display:flex;flex-direction:column;gap:10px;background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+  .xd-2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .xd-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+  .xd-3 .lbl{white-space:nowrap;letter-spacing:.08em}
+  .xd-cond{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 0;border-top:1px solid var(--line);font-size:13px;font-weight:600}
+  .xd-cond:first-child{border-top:0}
+  .xd-cond .pill{min-height:34px;font-size:12px;padding:0 12px}
+  .xd-cond .pill.on{background:var(--ok-soft,#e6f5ec);border-color:var(--ok);color:var(--ok)}
+  .xd-cond .pill.on.bad{background:var(--bad-soft,#fdeceb);border-color:var(--bad);color:var(--bad)}
+  .xd-photo{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .xd-photo button{min-height:64px;border:1.5px dashed var(--line);border-radius:12px;background:var(--paper-2);font-size:12px;font-weight:600;cursor:pointer;color:inherit}
+  .xd-photo button.has{border-style:solid;border-color:var(--ok);color:var(--ok)}
+  .xd-row{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:9px 0;border-top:1px solid var(--line);font-size:13px}
+  .xd-row:first-child{border-top:0}
+  .xd-ap{display:flex;flex-direction:column;gap:6px;background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+  .seg{display:flex;background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:3px}
+  .seg button{flex:1;font:inherit;font-weight:700;font-size:13px;min-height:38px;border:0;background:transparent;color:var(--muted);border-radius:999px;cursor:pointer}
+  .seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+  .apv{background:var(--accent-soft);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:2px}
+  .apv b{color:var(--accent)}
+  .badge{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 6px;border-radius:99px;background:var(--bad);color:#fff;font-size:11px;font-weight:800;margin-left:4px}
+  .pinpad{display:grid;grid-template-columns:repeat(3,72px);gap:10px;justify-content:center}
+  .pinpad button{height:56px;border-radius:14px;background:var(--paper);border:1px solid var(--line);font-size:20px;font-weight:600;cursor:pointer;color:inherit}
+  .pinpad button:active{background:var(--accent-soft)}
+  .dots{display:flex;gap:12px;justify-content:center}.dots i{width:14px;height:14px;border-radius:50%;border:1.5px solid var(--accent);display:block}.dots i.f{background:var(--accent)}
+  .req{color:var(--bad)}
+</style>
+</head>
+<body>
+<main class="wrap" style="padding-bottom:calc(32px + env(safe-area-inset-bottom))">
+  <!-- Đăng nhập: chọn tên; người duyệt nhập mã 4 số -->
+  <section id="vLogin" style="display:flex;flex-direction:column;gap:16px">
+    <div class="hd-l">
+      <div class="brand">SAMCO</div>
+      <div class="title">Xe Demo</div>
+      <div class="sub">Đăng ký sử dụng xe lái thử</div>
+      <div class="chrome"></div>
+    </div>
+    <div class="card" style="display:flex;flex-direction:column;gap:12px">
+      <label class="field"><span class="lbl">Họ tên <span class="req">*</span></span>
+        <select id="who" class="inp"><option value="">Đang tải…</option></select>
+        <span class="hint">Máy sẽ nhớ tên cho lần sau.</span></label>
+      <button class="btn cta pri" id="goBtn">Tiếp tục</button>
+      <div id="pinBox" hidden style="display:flex;flex-direction:column;gap:14px;padding-top:4px">
+        <span class="small" id="pinWho" style="text-align:center;font-weight:600"></span>
+        <div class="dots" id="pinDots"><i></i><i></i><i></i><i></i></div>
+        <div class="pinpad" id="pinPad">
+          <button data-k="1">1</button><button data-k="2">2</button><button data-k="3">3</button>
+          <button data-k="4">4</button><button data-k="5">5</button><button data-k="6">6</button>
+          <button data-k="7">7</button><button data-k="8">8</button><button data-k="9">9</button>
+          <span></span><button data-k="0">0</button><button data-k="del" aria-label="Xóa">⌫</button>
+        </div>
+        <span class="small" id="pinMsg" style="text-align:center;color:var(--bad);min-height:1.4em"></span>
+      </div>
+    </div>
+  </section>
+
+  <section id="vApp" hidden style="display:flex;flex-direction:column;gap:14px">
+    <div class="hd" style="align-items:flex-start">
+      <div class="hd-l">
+        <div class="brand">SAMCO</div>
+        <div class="title">Xe Demo</div>
+        <div class="chrome"></div>
+      </div>
+      <div style="text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:2px">
+        <b id="meName" style="font-size:14px"></b><span class="small muted" id="meSub"></span>
+        <button class="btn sm" id="btnOut" style="margin-top:4px">Đổi người</button>
+      </div>
+    </div>
+    <div class="tabs-top" id="tabs" hidden><button data-t="xe" class="on">Xe</button><button data-t="duyet" id="tabDuyet">Duyệt lệnh</button></div>
+
+    <div id="vXe" style="display:flex;flex-direction:column;gap:12px">
+      <div id="xdMine"></div>
+      <span class="sect">Xe demo · chọn xe để lấy</span>
+      <div class="xd-grid" id="xdGrid"><div class="loading"><span class="spin"></span>Đang tải…</div></div>
+      <div id="xdRecent" style="display:flex;flex-direction:column;gap:8px"></div>
+    </div>
+
+    <div id="vDuyet" hidden style="display:flex;flex-direction:column;gap:10px">
+      <span class="sect">Chờ duyệt</span>
+      <span class="hint">Nhân viên được lấy xe trước, duyệt sau. Không duyệt: ghi lý do, Quản lý sẽ xử lý.</span>
+      <div id="apCho" style="display:flex;flex-direction:column;gap:8px"></div>
+      <span class="sect" style="padding-top:8px">Đã xử lý gần đây</span>
+      <div id="apXong" style="display:flex;flex-direction:column;gap:8px"></div>
+    </div>
+  </section>
+</main>
+
+<!-- Xe -->
+<div class="sheet-bg" id="xdCarDlg" hidden><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="xdCarTitle"><div class="grab"></div>
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><div id="xdCarTitle" style="font-family:var(--display);font-size:24px;text-transform:uppercase"></div><button class="btn sm" data-close="xdCarDlg">Đóng</button></div>
+  <div id="xdCarInfo" style="display:flex;justify-content:space-between;align-items:center;gap:8px"></div>
+  <button class="btn cta pri" id="xdCarNew">Lập phiếu</button>
+  <span class="sect">Chuyến trước</span>
+  <div id="xdLogList"></div>
+</div></div>
+
+<!-- Bước 1: lập phiếu -->
+<div class="sheet-bg" id="xdFormDlg" hidden><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="xdFormTitle"><div class="grab"></div>
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><div style="display:flex;flex-direction:column;gap:2px"><span class="lbl">Bước 1 · đăng ký trước khi ra xe</span><div id="xdFormTitle" style="font-family:var(--display);font-size:22px;text-transform:uppercase;line-height:1.1"></div></div><button class="btn sm" data-close="xdFormDlg">Đóng</button></div>
+  <div class="seg" id="xdMode"><button data-m="Khách lái thử" aria-pressed="true">Lái thử</button><button data-m="Công tác" aria-pressed="false">Công tác</button></div>
+  <div class="xd-sec" id="fKhach" hidden>
+    <span class="sect">Khách hàng</span>
+    <label class="field"><span class="lbl">Họ tên <span class="req">*</span></span><input class="inp" id="fKh" autocomplete="off"></label>
+    <div class="xd-2"><label class="field"><span class="lbl">SĐT</span><input class="inp mono" id="fSdt" type="tel" placeholder="Không bắt buộc"></label>
+      <label class="field"><span class="lbl">Địa chỉ</span><input class="inp" id="fDiaChi" placeholder="Không bắt buộc"></label></div>
+    <div class="xd-3"><label class="field"><span class="lbl">CCCD</span><input class="inp mono" id="fCccd" inputmode="numeric" placeholder="Không bắt buộc"></label>
+      <label class="field"><span class="lbl">Ngày cấp</span><input class="inp mono" id="fCapNgay" placeholder="dd/mm/yyyy"></label>
+      <label class="field"><span class="lbl">Nơi cấp</span><input class="inp" id="fNoiCap" placeholder="Cục CS"></label></div>
+    <span class="hint">Ô để trống sẽ in thành dòng chấm để khách điền tay. CCCD chỉ dùng để in, không lưu vào hệ thống.</span>
+    <div class="xd-2"><label class="field"><span class="lbl">Số bằng lái</span><input class="inp mono" id="fGplx" placeholder="Không bắt buộc"></label>
+      <label class="field"><span class="lbl">Hạn</span><input class="inp mono" id="fHan" placeholder="VD: 12/2033"></label></div>
+    <label class="check"><input type="checkbox" id="fDongY">Khách đồng ý cho lưu ảnh bằng lái</label>
+    <div class="xd-photo" id="fPhoto"><button type="button" data-side="truoc">Bằng lái mặt trước</button><button type="button" data-side="sau">Mặt sau</button></div>
+    <input type="file" accept="image/*" id="fPhotoIn" hidden>
+    <label class="check"><input type="checkbox" id="fTuLai" checked>Khách tự lái</label>
+  </div>
+  <div class="xd-sec"><span class="sect">Lịch đi</span>
+    <label class="field"><span class="lbl">Lộ trình · nội dung <span class="req">*</span></span><input class="inp" id="fLoTrinh"></label>
+    <label class="check"><input type="checkbox" id="fXa">Đi ngoại thành hoặc dự kiến trên 100 km</label>
+    <div class="xd-2"><label class="field"><span class="lbl">Giờ đi dự kiến <span class="req">*</span></span><input class="inp mono" id="fDiDk" type="datetime-local"></label>
+      <label class="field"><span class="lbl">Giờ về dự kiến <span class="req">*</span></span><input class="inp mono" id="fVeDk" type="datetime-local"></label></div>
+    <span class="hint">ODO và pin điền sau, lúc lên xe hoặc khi trả xe.</span></div>
+  <div class="apv" id="fApv"></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+    <button class="btn out" id="fPrintBtn" style="min-height:52px;font-weight:800;letter-spacing:.08em">LƯU &amp; IN HỒ SƠ</button>
+    <button class="btn pri" id="fSaveBtn" style="min-height:52px;font-weight:800;letter-spacing:.12em">LƯU PHIẾU</button></div>
+  <span class="hint" style="text-align:center" id="fPrintNote"></span>
+</div></div>
+
+<!-- Bước 2: lên xe / trả xe -->
+<div class="sheet-bg" id="xdUseDlg" hidden><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="xdUseTitle"><div class="grab"></div>
+  <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:8px"><div style="display:flex;flex-direction:column;gap:2px"><span class="lbl">Bước 2 · lên xe hoặc trả xe</span><div id="xdUseTitle" style="font-family:var(--display);font-size:24px;text-transform:uppercase;line-height:1.1"></div></div>
+    <button class="btn sm" data-close="xdUseDlg">Đóng</button></div>
+  <div class="card flat" id="xdUseInfo" style="display:flex;justify-content:space-between;gap:8px;font-size:12px;padding:10px 12px"></div>
+  <div class="xd-2"><label class="field"><span class="lbl">ODO đi <span class="req">*</span></span><input class="inp mono" id="uOdoDi" inputmode="numeric"></label>
+    <label class="field"><span class="lbl">ODO về <span class="req">*</span></span><input class="inp mono" id="uOdoVe" inputmode="numeric"></label></div>
+  <span class="hint"><span id="uOdoHint"></span><br><b style="color:var(--ink)">Không nhớ ODO</b>: ghi “Không nhớ”.</span>
+  <div class="xd-3"><label class="field"><span class="lbl">Giờ đi <span class="req">*</span></span><input class="inp mono" id="uGioDi" type="time"></label>
+    <label class="field"><span class="lbl">Giờ về <span class="req">*</span></span><input class="inp mono" id="uGioVe" type="time"></label>
+    <label class="field"><span class="lbl">Pin % về <span class="req">*</span></span><input class="inp mono" id="uPin" inputmode="numeric" maxlength="3"></label></div>
+  <div style="display:flex;justify-content:space-between;font-size:12px"><span class="muted">Quãng đường</span><span class="mono b" id="uKm">—</span></div>
+  <div class="xd-sec" style="gap:4px"><div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px"><span class="sect">Tình trạng sau chuyến <span class="req">*</span></span><span class="small muted" id="uTtLeft"></span></div>
+    <span class="hint">Chọn từng mục. Không có mục nào chọn sẵn.</span>
+    <div id="uTt"></div>
+    <label class="field" style="padding-top:6px"><span class="lbl">Ghi chú tình trạng xe <span class="req" id="uTtGhiReq" hidden>* (có mục Không đạt)</span></span><input class="inp" id="uTtGhi" maxlength="300" placeholder="VD: Đèn báo áp suất lốp trước trái"></label>
+    <label class="check" style="font-weight:700"><input type="checkbox" id="uXacNhan">Tôi xác nhận tình trạng xe như trên (ký điện tử) <span class="req">*</span></label>
+  </div>
+  <label class="check" id="uKyWrap"><input type="checkbox" id="uKy">Khách đã ký Phiếu yêu cầu và Giấy cam kết <span class="req">*</span></label>
+  <label class="check"><input type="checkbox" id="uDon">Đã dọn rác và đồ dùng cá nhân</label>
+  <label class="check"><input type="checkbox" id="uSac">Đã cắm sạc</label>
+  <label class="field"><span class="lbl">Ghi chú khác</span><input class="inp" id="uGhi" maxlength="300"></label>
+  <div style="display:grid;grid-template-columns:1fr 1.4fr;gap:8px">
+    <button class="btn out" id="uStartBtn" style="min-height:50px;font-weight:800;letter-spacing:.1em">LƯU ODO ĐI</button>
+    <button class="btn pri" id="uReturnBtn" style="min-height:50px;font-weight:800;letter-spacing:.2em;grid-column:2">TRẢ XE</button></div>
+  <div style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap">
+    <button class="btn sm" id="uLogBtn">Chuyến trước</button><button class="btn sm" id="uReprint">In hồ sơ</button><button class="btn sm" id="uEditBtn">Sửa phiếu</button><button class="btn sm" id="uCancelBtn" style="color:var(--bad)">Hủy phiếu</button></div>
+</div></div>
+
+<script src="config.js"></script>
+<script src="https://giangnvtsamco.github.io/samco-core/api.js"></script>
+<script src="https://giangnvtsamco.github.io/samco-core/ui.js"></script>
+<script src="print.js?v=1.0.0"></script>
+<script src="app.js?v=1.0.0"></script>
+<script>XD.start();</script>
+</body>
+</html>
