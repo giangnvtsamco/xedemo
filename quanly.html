@@ -75,6 +75,7 @@
     <div id="moBox"></div>
     <div id="khBox"></div>
     <div id="dvBox"></div>
+    <div id="lechBox"></div>
     <div class="tbl-wrap"><table class="tbl xe-tbl"><thead><tr><th>Xe</th><th>Biển số</th><th class="num">ODO</th><th class="num">Pin</th><th>Tình trạng</th><th class="num">Chuyến tháng</th><th class="num">Km tháng</th><th class="num">ODO lệch</th><th>Dùng gần nhất</th></tr></thead><tbody id="xeBody"><tr><td colspan="9"><div class="loading"><span class="spin"></span>Đang tải…</div></td></tr></tbody></table></div>
     <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:8px;flex-wrap:wrap">
       <span class="sect" id="lgHead">Nhật trình</span>
@@ -183,7 +184,7 @@
 <script src="config.js"></script>
 <script src="https://giangnvtsamco.github.io/samco-core/api.js"></script>
 <script src="https://giangnvtsamco.github.io/samco-core/ui.js"></script>
-<script src="print.js?v=1.0.0"></script>
+<script src="print.js?v=1.0.1"></script>
 <script>
 XP.init({ base: '' });
 let PIN = (() => { try { return sessionStorage.getItem('xedemo_admin') || ''; } catch (e) { return ''; } })();
@@ -262,7 +263,7 @@ function renderXe() {
     <div class="acts"><button class="btn sm" data-in>In lệnh</button><button class="btn sm out" data-giay>Đã có chữ ký giấy</button>${m.nguoiDuyet ? '<button class="btn sm pri" data-thay>Duyệt thay</button>' : ''}</div></div>`).join('')}</div>` : '';
   $('#moBox').innerHTML = Q.mo.length ? `<div class="box"><span class="sect">Phiếu đang mở · ${Q.mo.length}</span>${Q.mo.map(m => `<div class="it" data-id="${esc(m.id)}">
     <div class="small" style="min-width:0"><b>${esc(L[m.bien] || '')} ${esc(m.bien)}</b> · <span class="chip ${m.trangThai === 'Đang dùng' ? 'acc' : 'mute'}">${esc(m.trangThai)}</span> ${chipD(m)}<br>${esc(m.nguoi)} · ${esc(m.boPhan)} · ${esc(m.muc)}${m.kh ? ' · ' + esc(m.kh) : ''} · ${esc(m.di)} → ${esc(m.ve)}</div>
-    <div class="acts"><button class="btn sm" data-in>In</button><button class="btn sm out" data-huy style="color:var(--bad)">Hủy lệnh</button></div></div>`).join('')}</div>` : '';
+    <div class="acts"><button class="btn sm" data-in>In</button>${m.duyet === 'Chờ duyệt' || m.duyet === 'Không duyệt' ? '<button class="btn sm out" data-giay>Đã có chữ ký giấy</button>' : ''}<button class="btn sm out" data-huy style="color:var(--bad)">Hủy lệnh</button></div></div>`).join('')}</div>` : '';
   $('#khBox').innerHTML = Q.khongDuyet.length ? `<details class="box"><summary class="sect" style="cursor:pointer">Không duyệt gần đây · ${Q.khongDuyet.length}</summary>${Q.khongDuyet.map(m => `<div class="it" data-id="${esc(m.id)}">
     <div class="small"><b>${esc(L[m.bien] || '')} ${esc(m.bien)}</b> · ${esc(m.nguoi)} · ${esc(m.di)} · ${esc(m.nguoiDuyet)}: <b style="color:var(--bad)">${esc(m.yKien)}</b></div>
     <div class="acts"><button class="btn sm out" data-giay>Đã có chữ ký giấy</button></div></div>`).join('')}</details>` : '';
@@ -271,9 +272,13 @@ function renderXe() {
     ${d.cho.map(x => `<div class="dv-row" data-lt="${esc(x.id)}"><b class="mono">${esc(x.bien)}</b>
       <span style="display:flex;gap:6px"><input class="inp mono" data-k="odo" placeholder="ODO nhận lại" style="min-height:36px;max-width:150px" value="${esc(x.odoDi)}"><input class="inp mono" data-k="pin" placeholder="Pin % (nếu đổi)" style="min-height:36px;max-width:130px"></span>
       <button class="btn sm ok" data-nhan>Nhận lại xe</button></div>`).join('')}</div>`).join('')}</div>` : '';
+  $('#lechBox').innerHTML = (Q.lech || []).length ? `<div class="box" style="border-color:var(--bad)"><span class="sect" style="color:var(--bad)">Cảnh báo ODO lệch · ${Q.lech.length} lượt</span>
+    <span class="hint">ODO đi của lượt này khác ODO về của lượt trước. Bấm để mở nhật trình xe, sửa ô đỏ (ghi lý do) hoặc thêm lượt không có phiếu cho phần km thiếu.</span>
+    ${Q.lech.map(l => `<div class="it" data-lech="${esc(l.bien)}" style="cursor:pointer"><div class="small"><b>${esc(l.loai)} ${esc(l.bien)}</b> · ${esc(l.ngay)} · ${esc(l.nguoi)} · <span class="mono">${esc(l.id)}</span><br><b style="color:var(--bad)">${esc(l.lech)}</b></div><span class="small" style="color:var(--accent);font-weight:700">Mở nhật trình ›</span></div>`).join('')}</div>` : '';
   $('#fXe').innerHTML = '<option value="">Tất cả xe</option>' + Q.cars.map(c => `<option value="${esc(c.bien)}">${esc(c.loai)} · ${esc(c.bien)}</option>`).join('');
   $('#nvList').innerHTML = (Q.nhanVien || []).map(n => `<option value="${esc(n)}">`).join('');
 }
+$('#lechBox').onclick = e => { const it = e.target.closest('[data-lech]'); if (it) { load(it.dataset.lech); setTimeout(() => $('#lgHead').scrollIntoView({ behavior: 'smooth' }), 400); } };
 $('#xeBody').onclick = e => { const tr = e.target.closest('tr[data-bien]'); if (tr) load(tr.dataset.bien); };
 $('#lgBody').addEventListener('input', e => {
   const tr = e.target.closest('tr'); if (!tr || !$('[data-k=di]', tr)) return;
@@ -421,7 +426,7 @@ function renderHs() {
       <td><span class="mono small">${esc(p.id)}</span><span class="sub2">${esc(p.ngayFull)} · ${esc(p.diDkHm)}–${esc(p.veDkHm)}</span><span class="sub2">${esc(p.muc)} · ${esc(p.trangThai)}</span></td>
       <td>${esc(p.nguoi)}<span class="sub2">${esc(p.boPhan)}</span>${p.kh ? '<span class="sub2">Khách: ' + esc(p.kh) + '</span>' : ''}</td>
       <td><b>${esc(p.loai)}</b> <span class="mono small">${esc(p.bien)}</span>${p.km !== '' ? ' · ' + esc(p.km) + ' km' : ''}<span class="sub2" style="max-width:260px;white-space:normal">${esc(p.loTrinh)}${p.xa ? ' · đi xa' : ''}</span></td>
-      <td>${chipD(p)}<span class="sub2">${esc(p.nguoiDuyet || p.capDuyet)}</span></td>
+      <td>${chipD(p)}<span class="sub2">${esc(p.nguoiDuyet || p.capDuyet)}</span>${p.duyet === 'Chờ duyệt' || p.duyet === 'Không duyệt' ? '<button class="btn sm out" data-giay style="margin-top:4px;min-height:28px;font-size:11px">Đã có chữ ký giấy</button>' : ''}</td>
       <td><div class="pb"><button class="btn sm" data-k="lenh">Lệnh${lt ? ' + Phiếu YC' : ''}</button>${lt ? '<button class="btn sm" data-k="camket">Cam kết</button>' : ''}${tra && p.xacNhan ? '<button class="btn sm" data-k="kiemtra">Kiểm tra xe</button>' : ''}<button class="btn sm out" data-k="bo">Trọn bộ</button></div></td></tr>`;
   }).join('') : '<tr><td colspan="6"><div class="empty">Không có phiếu nào khớp bộ lọc.</div></td></tr>';
 }
@@ -433,6 +438,8 @@ $('#hsBody').addEventListener('click', e => {
   const p = HS.find(x => x.id === tr.dataset.id);
   const ck = e.target.closest('[data-pick]');
   if (ck) { ck.checked ? hsPick.add(p.id) : hsPick.delete(p.id); $('#hsN').textContent = hsPick.size; return; }
+  const g = e.target.closest('[data-giay]');
+  if (g) return busy(g, '', async () => { try { await call('adminDuyet', PIN, p.id, 'giay'); toast('Đã xác nhận chữ ký giấy'); const i = HS.indexOf(p); const r = await call('adminHoSo', PIN, { q: p.id, huy: true }); if (r.rows[0]) HS[i] = r.rows[0]; renderHs(); load(); } catch (err) { toast(err, 1); } });
   const b = e.target.closest('button[data-k]'); if (!b) return;
   $$('#hsBody tr').forEach(x => x.classList.toggle('on', x === tr));
   const k = b.dataset.k;

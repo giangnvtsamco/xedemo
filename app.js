@@ -263,7 +263,6 @@
         const b = $('#fPhoto [data-side=' + side + ']'); b.classList.add('has'); b.textContent = (side === 'truoc' ? 'Mặt trước' : 'Mặt sau') + ' · đã chụp';
       } catch (err) { toast(err, 1); }
     };
-    $('#fSaveBtn').onclick = () => saveForm($('#fSaveBtn'), false);
     $('#fPrintBtn').onclick = () => saveForm($('#fPrintBtn'), true);
     ['#uOdoDi', '#uOdoVe', '#uGioDi', '#uGioVe'].forEach(s => $(s).addEventListener('input', calcKm));
     $('#uTt').addEventListener('click', e => { const b = e.target.closest('.pill'); if (!b) return; TTV[b.closest('.xd-cond').dataset.k] = b.dataset.v; renderTt(); });
