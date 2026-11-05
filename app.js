@@ -193,13 +193,13 @@
   let U = null, TTV = {};
   function openUse(id) {
     const p = D.mine.find(x => x.id === id); if (!p) return;
-    U = p; TTV = {};
+    U = p; TTV = {}; TT.forEach(k => { TTV[k[0]] = 'Đạt'; }); // mặc định Đạt, không đạt thì đổi
     const car = D.cars.find(c => c.bien === p.bien) || { loai: '', bien: p.bien, odo: '' };
     $('#xdUseTitle').textContent = car.loai + ' · ' + car.bien;
     $('#xdUseInfo').innerHTML = `<span>${esc(p.muc)}${p.kh ? ' · ' + esc(p.kh) : ''}<br>${chipDuyet(p)}</span><span class="mono">${esc(p.diDkHm)}–${esc(p.veDkHm)}</span>`;
     $('#uOdoDi').value = p.odoDi || (car.odo === '' ? '' : car.odo);
     $('#uOdoHint').textContent = (car.odo !== '' ? 'ODO đi tự điền theo lần trả gần nhất (' + num(car.odo) + ') · sửa nếu khác. ' : '') + 'Có thể lưu ODO đi trước, ODO về điền sau.';
-    $('#uOdoVe').value = ''; $('#uGioDi').value = p.gioDi || p.diDkHm || hmNow(); $('#uGioVe').value = hmNow(); $('#uPin').value = '';
+    $('#uOdoVe').value = ''; $('#uGioDi').value = p.gioDi || (p.diDkHm && p.diDkHm < hmNow() ? p.diDkHm : hmNow()); $('#uGioVe').value = hmNow(); $('#uPin').value = '';
     renderTt();
     $('#uTtGhi').value = ''; $('#uXacNhan').checked = false;
     $('#uKyWrap').hidden = p.muc !== 'Khách lái thử'; $('#uKy').checked = false; $('#uDon').checked = false; $('#uSac').checked = false; $('#uGhi').value = '';
@@ -221,6 +221,9 @@
     if (a && b && b >= a) t = (b - a) + ' km';
     if (g1 && g2) { let m = (+g2.slice(0, 2) * 60 + +g2.slice(3)) - (+g1.slice(0, 2) * 60 + +g1.slice(3)); if (m < 0) m += 1440; t += (t ? ' · ' : '') + Math.floor(m / 60) + ' giờ ' + (m % 60) + ' phút'; }
     $('#uKm').textContent = t || '—';
+    const nguoc = g1 && g2 && g2 < g1;
+    $('#uKm').style.color = nguoc ? 'var(--bad)' : '';
+    if (nguoc) $('#uKm').textContent = 'Giờ về đang trước giờ đi · vui lòng kiểm tra';
   }
 
   /* ---------- Sự kiện ---------- */

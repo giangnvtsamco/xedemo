@@ -184,7 +184,7 @@
 <script src="config.js"></script>
 <script src="https://giangnvtsamco.github.io/samco-core/api.js"></script>
 <script src="https://giangnvtsamco.github.io/samco-core/ui.js"></script>
-<script src="print.js?v=1.0.1"></script>
+<script src="print.js?v=1.0.2"></script>
 <script>
 XP.init({ base: '' });
 let PIN = (() => { try { return sessionStorage.getItem('xedemo_admin') || ''; } catch (e) { return ''; } })();
@@ -260,7 +260,7 @@ function renderXe() {
   $('#apBox').innerHTML = Q.duyet.length ? `<div class="box"><span class="sect">Lệnh chờ duyệt · ${Q.duyet.length}</span>${Q.duyet.map(m => `<div class="it" data-id="${esc(m.id)}">
     <div class="small" style="min-width:0"><b>${esc(L[m.bien] || '')} ${esc(m.bien)}</b> · ${esc(m.nguoi)} · ${esc(m.boPhan)} · ${esc(m.muc)}${m.xa ? ' · <b style="color:var(--warn)">đi xa</b>' : ''} · <span class="chip ${m.trangThai === 'Đã trả' ? 'mute' : 'acc'}">${esc(m.trangThai)}</span><br>
       Người duyệt: <b>${esc(m.nguoiDuyet || m.capDuyet)}</b>${m.nguoiDuyet ? ' (' + esc(m.capDuyet) + ')' : ''} · ${esc(m.di)} → ${esc(m.ve)} · <span class="${m.cho > Q.tre ? 'late' : 'muted'}">chờ ${m.cho} giờ</span></div>
-    <div class="acts"><button class="btn sm" data-in>In lệnh</button><button class="btn sm out" data-giay>Đã có chữ ký giấy</button>${m.nguoiDuyet ? '<button class="btn sm pri" data-thay>Duyệt thay</button>' : ''}</div></div>`).join('')}</div>` : '';
+    <div class="acts"><button class="btn sm" data-in>In lệnh</button><button class="btn sm out" data-giay>Đã có chữ ký giấy</button>${m.nguoiDuyet ? '<button class="btn sm pri" data-thay>Duyệt thay</button>' : ''}<button class="btn sm out" data-huy style="color:var(--bad)">Hủy lệnh</button></div></div>`).join('')}</div>` : '';
   $('#moBox').innerHTML = Q.mo.length ? `<div class="box"><span class="sect">Phiếu đang mở · ${Q.mo.length}</span>${Q.mo.map(m => `<div class="it" data-id="${esc(m.id)}">
     <div class="small" style="min-width:0"><b>${esc(L[m.bien] || '')} ${esc(m.bien)}</b> · <span class="chip ${m.trangThai === 'Đang dùng' ? 'acc' : 'mute'}">${esc(m.trangThai)}</span> ${chipD(m)}<br>${esc(m.nguoi)} · ${esc(m.boPhan)} · ${esc(m.muc)}${m.kh ? ' · ' + esc(m.kh) : ''} · ${esc(m.di)} → ${esc(m.ve)}</div>
     <div class="acts"><button class="btn sm" data-in>In</button>${m.duyet === 'Chờ duyệt' || m.duyet === 'Không duyệt' ? '<button class="btn sm out" data-giay>Đã có chữ ký giấy</button>' : ''}<button class="btn sm out" data-huy style="color:var(--bad)">Hủy lệnh</button></div></div>`).join('')}</div>` : '';
@@ -269,7 +269,7 @@ function renderXe() {
     <div class="acts"><button class="btn sm out" data-giay>Đã có chữ ký giấy</button></div></div>`).join('')}</details>` : '';
   $('#dvBox').innerHTML = Q.dv.length ? `<div class="box"><span class="sect">Xe đang ở Phòng Dịch vụ</span>${Q.dv.map(d => `<div style="display:flex;flex-direction:column;gap:6px;border-top:1px solid var(--line);padding-top:8px">
     <div class="small"><b>${esc(d.id)}</b> · giao ${esc(d.giao)}${d.nhanDk ? ' · hẹn nhận ' + esc(d.nhanDk) : ''} · ${esc(d.congViec)} <button class="btn sm" data-reprint="${esc(d.id)}" style="margin-left:6px">In lại</button></div>
-    ${d.cho.map(x => `<div class="dv-row" data-lt="${esc(x.id)}"><b class="mono">${esc(x.bien)}</b>
+    ${d.cho.map(x => `<div class="dv-row" data-lt="${esc(x.id)}"><span><b>${esc(x.loai)}</b> <span class="mono small">${esc(x.bien)}</span></span>
       <span style="display:flex;gap:6px"><input class="inp mono" data-k="odo" placeholder="ODO nhận lại" style="min-height:36px;max-width:150px" value="${esc(x.odoDi)}"><input class="inp mono" data-k="pin" placeholder="Pin % (nếu đổi)" style="min-height:36px;max-width:130px"></span>
       <button class="btn sm ok" data-nhan>Nhận lại xe</button></div>`).join('')}</div>`).join('')}</div>` : '';
   $('#lechBox').innerHTML = (Q.lech || []).length ? `<div class="box" style="border-color:var(--bad)"><span class="sect" style="color:var(--bad)">Cảnh báo ODO lệch · ${Q.lech.length} lượt</span>
@@ -305,8 +305,8 @@ async function printId(id, kind) {
     return busy(b, '', async () => { try { await call('adminDuyet', PIN, id, giay ? 'giay' : 'thay'); toast(giay ? 'Đã đánh dấu có chữ ký giấy' : 'Đã duyệt thay'); load(); } catch (err) { toast(err, 1); } });
   }
   if (b.hasAttribute('data-huy')) {
-    const m = Q.mo.find(x => x.id === id);
-    const lyDo = prompt('Hủy lệnh ' + m.bien + ' của ' + m.nguoi + (m.trangThai === 'Đang dùng' ? ' (đang dùng xe)' : '') + '.\nLý do hủy (bắt buộc):', '');
+    const m = Q.mo.find(x => x.id === id) || Q.duyet.find(x => x.id === id);
+    const lyDo = prompt('Hủy lệnh ' + (LOAI()[m.bien] || '') + ' ' + m.bien + ' của ' + m.nguoi + (m.trangThai === 'Đang dùng' ? ' (đang dùng xe)' : m.trangThai === 'Đã trả' ? ' (đã trả xe: lượt này sẽ bị bỏ khỏi nhật trình)' : '') + '.\nLý do hủy (bắt buộc):', '');
     if (lyDo === null) return; if (!lyDo.trim()) return toast('Vui lòng ghi lý do hủy.', 1);
     busy(b, '', async () => { try { await call('adminLtCancel', PIN, id, lyDo); toast('Đã hủy lệnh'); load(); } catch (err) { toast(err, 1); } });
   }
