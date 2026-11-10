@@ -239,9 +239,16 @@ async function load(bien) {
     renderXe();
   } catch (e) { if (!authFail(e)) $('#xeBody').innerHTML = `<tr><td colspan="9"><div class="empty">${esc(e)}</div></td></tr>`; }
 }
+/* Trạng thái duyệt kèm người duyệt: "Tú (Tổ trưởng nhóm 4) đã duyệt giấy" */
 function chipD(r) {
   const d = r.duyet; if (!d || d === 'Không cần' || d === 'Trước khi dùng app') return '<span class="small muted">' + esc(d === 'Trước khi dùng app' ? '—' : d || '') + '</span>';
-  return `<span class="chip ${d === 'Đã duyệt' ? 'ok' : d === 'Không duyệt' ? 'bad' : 'warn'}">${esc(d)}${d === 'Đã duyệt' && r.cachDuyet === 'Giấy' ? ' · giấy' : ''}</span>`;
+  const ai = r.duyetBoi || r.nguoiDuyet || r.capDuyet || '';
+  const t = d === 'Chờ duyệt' ? 'Chờ ' + (ai || 'duyệt') + (ai ? ' duyệt' : '')
+    : d === 'Không duyệt' ? (ai ? ai + ' không duyệt' : 'Không duyệt')
+    : r.cachDuyet === 'Giấy' ? (ai ? ai + ' đã duyệt giấy' : 'Đã duyệt giấy')
+    : r.cachDuyet === 'Quản lý duyệt thay' ? 'Quản lý duyệt thay' + (ai ? ' ' + ai : '')
+    : (ai ? ai + ' đã duyệt' : 'Đã duyệt');
+  return `<span class="chip ${d === 'Đã duyệt' ? 'ok' : d === 'Không duyệt' ? 'bad' : 'warn'}" style="white-space:normal;text-align:left">${esc(t)}</span>`;
 }
 function renderXe() {
   const L = LOAI();
@@ -436,7 +443,7 @@ function renderHs() {
       <td><span class="mono small">${esc(p.id)}</span><span class="sub2">${esc(p.ngayFull)} · ${esc(p.diDkHm)}–${esc(p.veDkHm)}</span><span class="sub2">${esc(p.muc)} · ${esc(p.trangThai)}</span></td>
       <td>${esc(p.nguoi)}<span class="sub2">${esc(p.boPhan)}</span>${p.kh ? '<span class="sub2">Khách: ' + esc(p.kh) + '</span>' : ''}</td>
       <td><b>${esc(p.loai)}</b> <span class="mono small">${esc(p.bien)}</span>${p.km !== '' ? ' · ' + esc(p.km) + ' km' : ''}<span class="sub2" style="max-width:260px;white-space:normal">${esc(p.loTrinh)}${p.xa ? ' · đi xa' : ''}</span></td>
-      <td>${chipD(p)}<span class="sub2">${esc(p.nguoiDuyet || p.capDuyet)}</span>${p.duyet === 'Chờ duyệt' || p.duyet === 'Không duyệt' ? '<button class="btn sm out" data-giay style="margin-top:4px;min-height:28px;font-size:11px">Đã có chữ ký giấy</button>' : ''}</td>
+      <td>${chipD(p)}${p.duyet === 'Chờ duyệt' || p.duyet === 'Không duyệt' ? '<button class="btn sm out" data-giay style="margin-top:4px;min-height:28px;font-size:11px">Đã có chữ ký giấy</button>' : ''}</td>
       <td><div class="pb"><button class="btn sm" data-k="lenh">Lệnh${lt ? ' + Phiếu YC' : ''}</button>${lt ? '<button class="btn sm" data-k="camket">Cam kết</button>' : ''}${tra && p.xacNhan ? '<button class="btn sm" data-k="kiemtra">Kiểm tra xe</button>' : ''}<button class="btn sm out" data-k="bo">Trọn bộ</button></div></td></tr>`;
   }).join('') : '<tr><td colspan="6"><div class="empty">Không có phiếu nào khớp bộ lọc.</div></td></tr>';
 }

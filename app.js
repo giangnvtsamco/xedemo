@@ -148,6 +148,8 @@
     const cache = p && printCache[p.id] || {};
     v('fCccd', cache.cccd); v('fCapNgay', cache.capNgay); v('fNoiCap', cache.noiCap);
     $('#fDongY').checked = p ? p.dongY : false; $('#fTuLai').checked = p ? p.tuLai : true; $('#fXa').checked = p ? p.xa : false;
+    const xa = D.duyetXa, goi = xa.ten ? xa.ten.split(/\s+/).pop() : '';
+    $('#fXaWho').textContent = xa.can && goi && xa.ten !== D.duyetGan.ten ? ' · ' + (goi === 'Quang' ? 'anh Quang' : goi) + ' duyệt' : '';
     v('fLoTrinh', p && p.loTrinh); v('fDiDk', p ? p.diDk : isoNow(10)); v('fVeDk', p ? p.veDk : isoNow(70));
     $$('#fPhoto button').forEach(b => { b.classList.remove('has'); b.textContent = b.dataset.side === 'truoc' ? 'Bằng lái mặt trước' : 'Mặt sau'; });
     syncForm(); openS('xdFormDlg');
@@ -199,7 +201,7 @@
     $('#xdUseInfo').innerHTML = `<span>${esc(p.muc)}${p.kh ? ' · ' + esc(p.kh) : ''}<br>${chipDuyet(p)}</span><span class="mono">${esc(p.diDkHm)}–${esc(p.veDkHm)}</span>`;
     $('#uOdoDi').value = p.odoDi || (car.odo === '' ? '' : car.odo);
     $('#uOdoHint').textContent = (car.odo !== '' ? 'ODO đi tự điền theo lần trả gần nhất (' + num(car.odo) + ') · sửa nếu khác. ' : '') + 'Có thể lưu ODO đi trước, ODO về điền sau.';
-    $('#uOdoVe').value = ''; $('#uGioDi').value = p.gioDi || (p.diDkHm && p.diDkHm < hmNow() ? p.diDkHm : hmNow()); $('#uGioVe').value = hmNow(); $('#uPin').value = '';
+    $('#uOdoVe').value = ''; $('#uGioDi').value = p.gioDi || (p.diDkHm && p.diDkHm < hmNow() ? p.diDkHm : hmNow()); $('#uGioVe').value = hmNow(); $('#uPin').value = ''; $('#uPinWarn').hidden = true;
     renderTt();
     $('#uTtGhi').value = ''; $('#uXacNhan').checked = false;
     $('#uKyWrap').hidden = p.muc !== 'Khách lái thử'; $('#uKy').checked = false; $('#uDon').checked = false; $('#uSac').checked = false; $('#uGhi').value = '';
@@ -268,6 +270,9 @@
     };
     $('#fPrintBtn').onclick = () => saveForm($('#fPrintBtn'), true);
     ['#uOdoDi', '#uOdoVe', '#uGioDi', '#uGioVe'].forEach(s => $(s).addEventListener('input', calcKm));
+    // Pin dưới 80%: nhắc bắt buộc sạc lên trên 90% (quy tắc VinFast)
+    const PIN_SAC = 80;
+    $('#uPin').addEventListener('input', () => { const v = $('#uPin').value.trim(); $('#uPinWarn').hidden = !(v !== '' && Number(v) < PIN_SAC); });
     $('#uTt').addEventListener('click', e => { const b = e.target.closest('.pill'); if (!b) return; TTV[b.closest('.xd-cond').dataset.k] = b.dataset.v; renderTt(); });
     $('#uStartBtn').onclick = () => {
       const odo = $('#uOdoDi').value.trim(); if (!odo) return toast('Vui lòng nhập ODO đi.', 1);
@@ -286,7 +291,7 @@
       if (!d.xacNhan) return toast('Vui lòng tick xác nhận tình trạng xe (ký điện tử).', 1);
       if (U.muc === 'Khách lái thử' && !d.daKy) return toast('Vui lòng xác nhận khách đã ký hồ sơ.', 1);
       busy($('#uReturnBtn'), 'Đang lưu', async () => {
-        try { const r = await api('xdReturn', U.id, d); closeS('xdUseDlg'); toast('Đã trả xe' + (r.km !== '' ? ' · ' + r.km + ' km' : '') + '. Cảm ơn anh/chị.'); load(); } catch (e) { fail(e); }
+        try { const r = await api('xdReturn', U.id, d); closeS('xdUseDlg'); toast(Number(d.pin) < PIN_SAC ? 'Đã trả xe. Pin ' + d.pin + '%: vui lòng sạc lên trên 90%. Bận chưa sạc được thì báo Giang liền.' : 'Đã trả xe' + (r.km !== '' ? ' · ' + r.km + ' km' : '') + '. Cảm ơn anh/chị.'); load(); } catch (e) { fail(e); }
       });
     };
     $('#uReprint').onclick = () => doPrint(U);
