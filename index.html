@@ -20,12 +20,14 @@
 <link rel="icon" href="icon.svg?v=2" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon-180.png?v=2">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&family=Tinos:ital,wght@0,400;0,700;1,400&family=Arimo:wght@400;700&display=swap">
-<link rel="stylesheet" href="https://giangnvtsamco.github.io/samco-core/v1/style.css">
+<link rel="stylesheet" href="https://giangnvtsamco.github.io/samco-core/v1/style.css?v=1.1">
 <style>
   [hidden]{display:none!important}
   .xd-mine{display:flex;flex-direction:column;gap:6px;background:var(--accent-soft);border:1px solid var(--accent);border-radius:14px;padding:12px 14px}
   .xd-mine button{display:flex;justify-content:space-between;align-items:center;gap:8px;border:0;background:none;padding:6px 0;text-align:left;cursor:pointer;font-size:14px;color:inherit;border-top:1px solid color-mix(in srgb,var(--accent) 25%,transparent)}
   .xd-mine .sect+button{border-top:0}
+  .xd-mine .xd-nhac{align-self:flex-start;border:1px solid var(--accent);border-radius:999px;padding:5px 14px;margin:0 0 6px;background:var(--paper);color:var(--accent);font-size:13px;font-weight:700}
+  .xd-hl{outline:3px solid var(--accent);outline-offset:2px}
   .xd-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
   .xd-car{display:flex;flex-direction:column;gap:3px;background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:12px;text-align:left;cursor:pointer;min-height:84px;color:inherit}
   .xd-car .n{font-family:var(--display);font-size:20px;line-height:1.1;text-transform:uppercase}
@@ -123,6 +125,7 @@
       <span class="sect" style="padding-top:8px">Đã xử lý gần đây</span>
       <div id="apXong" style="display:flex;flex-direction:column;gap:8px"></div>
     </div>
+    <div id="appFoot"></div>
   </section>
 </main>
 
@@ -131,8 +134,19 @@
   <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><div id="xdCarTitle" style="font-family:var(--display);font-size:24px;text-transform:uppercase"></div><button class="btn sm" data-close="xdCarDlg">Đóng</button></div>
   <div id="xdCarInfo" style="display:flex;justify-content:space-between;align-items:center;gap:8px"></div>
   <button class="btn cta pri" id="xdCarNew">Lập phiếu</button>
+  <div id="xdLich" hidden style="display:flex;flex-direction:column;gap:6px"><span class="sect">Lịch đã đặt</span>
+    <div class="card flat" style="padding:4px 14px" id="xdLichList"></div>
+    <span class="hint" id="xdLichHint">Vẫn lập phiếu được nếu không trùng giờ.</span></div>
   <span class="sect">Chuyến trước</span>
   <div id="xdLogList"></div>
+</div></div>
+
+<!-- Nhắc người duyệt -->
+<div class="sheet-bg" id="xdNhacDlg" hidden><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="xdNhacH"><div class="grab"></div>
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><div id="xdNhacH" style="font-family:var(--display);font-size:22px;text-transform:uppercase">Nhắc duyệt lệnh</div><button class="btn sm" data-close="xdNhacDlg">Để sau</button></div>
+  <span class="small muted">Gửi tin cho <b id="xdNhacWho"></b>. Bấm link trong tin là mở thẳng lệnh cần duyệt.</span>
+  <div class="card flat" id="xdNhacTxt" style="white-space:pre-wrap;font-size:13px;padding:12px 14px"></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button class="btn out" id="xdNhacCopy">Sao chép tin</button><button class="btn pri" id="xdNhacShare">Gửi qua Zalo…</button></div>
 </div></div>
 
 <!-- Bước 1: lập phiếu -->
@@ -198,9 +212,9 @@
 
 <script src="config.js"></script>
 <script src="https://giangnvtsamco.github.io/samco-core/v1/api.js"></script>
-<script src="https://giangnvtsamco.github.io/samco-core/v1/ui.js"></script>
-<script src="print.js?v=1.0.2"></script>
-<script src="app.js?v=1.0.6"></script>
+<script src="https://giangnvtsamco.github.io/samco-core/v1/ui.js?v=1.1"></script>
+<script src="print.js?v=1.1.0"></script>
+<script src="app.js?v=1.1.0"></script>
 <script>XD.start();</script>
 </body>
 </html>
