@@ -1,4 +1,4 @@
-/* Xe Demo · trang nhân viên · v1.0
+/* Xe Demo · trang nhân viên · v1.1
    Cần nạp trước: config.js, samco-core api.js + ui.js, print.js. */
 (function () {
   const pad = n => String(n).padStart(2, '0');
@@ -8,6 +8,14 @@
   const KEY = 'xedemo_auth';
   let A = (() => { try { return JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { return null; } })();
   let D = null, STAFF = [], tab = 'xe', printCache = {};
+  const APP_V = '1.1.0', SITE = 'https://xedemo.vinfastsamcobinhtan.com/';
+  // Lưu bản dữ liệu gần nhất trên máy: mở app là thấy ngay, rồi cập nhật ngầm
+  const cKey = () => 'xedemo_cache_' + (A && A.ten || '');
+  const cacheGet = () => { try { return JSON.parse(localStorage.getItem(cKey()) || 'null'); } catch (e) { return null; } };
+  const cacheSet = d => { try { localStorage.setItem(cKey(), JSON.stringify(d)); } catch (e) {} };
+  // Link nhắc duyệt: ?duyet=LT-... → mở thẳng tab Duyệt lệnh
+  let goDuyet = (() => { try { return new URLSearchParams(location.search).get('duyet') || ''; } catch (e) { return ''; } })();
+  if (goDuyet) { try { history.replaceState(null, '', location.pathname); } catch (e) {} }
 
   const api = (fn, ...a) => call(fn, A, ...a);
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(A)); } catch (e) {} };
@@ -19,16 +27,27 @@
   /* ---------- Đăng nhập: chọn tên → (người duyệt) nhập mã 4 số, tự vào ---------- */
   async function boot() {
     XP.init({ base: '' });
+    appFoot('Xe Demo', APP_V, $('#appFoot'));
+    if (A && A.ten) {
+      const c = cacheGet();
+      if (c && c.me) { D = c; $('#vLogin').hidden = true; $('#vApp').hidden = false; render(); }
+      return enter();
+    }
+    showLogin();
+  }
+  async function loadStaff() {
     try {
       STAFF = await call('xdStaff');
       const g = {}; STAFF.forEach(s => (g[s.boPhan] = g[s.boPhan] || []).push(s));
       $('#who').innerHTML = '<option value="">— Chọn họ tên —</option>' + Object.keys(g).map(b => `<optgroup label="${esc(b)}">` +
         g[b].map(s => `<option value="${esc(s.ten)}">${esc(s.ten)}</option>`).join('') + '</optgroup>').join('');
-    } catch (e) { $('#who').innerHTML = '<option value="">Không tải được danh sách</option>'; toast(e, 1); return; }
-    if (A && STAFF.some(s => s.ten === A.ten)) enter(); else showLogin();
+    } catch (e) { $('#who').innerHTML = '<option value="">Không tải được danh sách</option>'; toast(e, 1); }
   }
-  function showLogin() { $('#vLogin').hidden = false; $('#vApp').hidden = true; $('#who').value = ''; $('#pinBox').hidden = true; $('#goBtn').hidden = false; }
-  function logout() { A = null; try { localStorage.removeItem(KEY); } catch (e) {} D = null; showLogin(); }
+  function showLogin() {
+    $('#vLogin').hidden = false; $('#vApp').hidden = true; $('#who').value = ''; $('#pinBox').hidden = true; $('#goBtn').hidden = false;
+    if (!STAFF.length) loadStaff();
+  }
+  function logout() { try { localStorage.removeItem(cKey()); } catch (e) {} A = null; try { localStorage.removeItem(KEY); } catch (e) {} D = null; showLogin(); }
   let code = '';
   function onWho() {
     const s = STAFF.find(x => x.ten === $('#who').value);
@@ -41,7 +60,7 @@
     const ten = $('#who').value;
     A = { ten, ma: code };
     $('#pinMsg').textContent = 'Đang kiểm tra…';
-    try { D = await api('xdInit'); save(); $('#pinMsg').textContent = ''; enter(true); }
+    try { D = await api('xdInit'); save(); cacheSet(D); $('#pinMsg').textContent = ''; enter(true); }
     catch (e) { A = null; code = ''; dots(); $('#pinMsg').textContent = String(e).replace(/\s*\(đăng nhập\)/, ''); }
   }
   async function enter(loaded) {
@@ -50,9 +69,10 @@
   }
 
   async function load() {
-    try { D = await api('xdInit'); render(); }
+    try { D = await api('xdInit'); cacheSet(D); render(); }
     catch (e) {
       if (/đăng nhập/i.test(String(e))) return fail(e);
+      if (D) return toast(String(e) + ' Đang hiện dữ liệu lần trước.', 1); // giữ màn hình cũ, không xóa trắng
       $('#xdGrid').innerHTML = `<div class="empty" style="grid-column:1/-1">${esc(e)}<br><button class="btn sm out" style="margin-top:10px" id="xdRetry">Thử lại</button></div>`;
       $('#xdRetry').onclick = load;
     }
@@ -64,6 +84,7 @@
     $('#meName').textContent = me.ten;
     $('#meSub').textContent = (me.sale ? 'Sale · nhóm ' + (me.nhom || '—') : me.boPhan) + (me.duyet ? ' · ' + me.duyet.chucDanh : '');
     $('#tabs').hidden = !me.duyet;
+    if (goDuyet && me.duyet) tab = 'duyet';
     const n = me.duyet && D.cho ? D.cho.cho.length : 0;
     $('#tabDuyet').innerHTML = 'Duyệt lệnh' + (n ? ` <span class="badge">${n}</span>` : '');
     $$('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.t === tab));
@@ -72,7 +93,8 @@
     $('#xdMine').innerHTML = D.mine.length ? `<div class="xd-mine"><span class="sect">Phiếu của bạn · ${D.mine.length}</span>${D.mine.map(p => {
       const car = D.cars.find(c => c.bien === p.bien) || {};
       const t = p.trangThai === 'Đang dùng' ? 'đang dùng · về ' + p.veDkHm : 'đặt ' + p.diDkHm + ' ' + p.ngay;
-      return `<button data-phieu="${esc(p.id)}"><span><b>${esc(car.loai || p.bien)}</b> ${esc(t)}<br>${chipDuyet(p)}</span><span class="small b" style="color:var(--accent);white-space:nowrap">${p.trangThai === 'Đang dùng' ? 'Trả xe' : 'ODO · Trả xe'} ›</span></button>`;
+      return `<button data-phieu="${esc(p.id)}"><span><b>${esc(car.loai || p.bien)}</b> ${esc(t)}<br>${chipDuyet(p)}</span><span class="small b" style="color:var(--accent);white-space:nowrap">${p.trangThai === 'Đang dùng' ? 'Trả xe' : 'ODO · Trả xe'} ›</span></button>` +
+        (p.duyet === 'Chờ duyệt' && p.nguoiDuyet ? `<button class="xd-nhac" data-nhac="${esc(p.id)}">Nhắc ${esc(String(p.nguoiDuyet).split(' ').pop())} duyệt</button>` : '');
     }).join('')}</div>` : '';
     $('#xdGrid').innerHTML = D.cars.map(c => `<button class="xd-car" data-bien="${esc(c.bien)}">
       <span class="n">${esc(c.loai)}</span><span class="b">${esc(c.bien)}</span>
@@ -104,6 +126,12 @@
         <button class="btn out" data-no style="color:var(--bad)">Không duyệt</button><button class="btn pri" data-ok>Duyệt</button></div>`}</div>`;
     $('#apCho').innerHTML = C.cho.length ? C.cho.map(x => item(x)).join('') : '<div class="empty">Không có lệnh nào chờ duyệt.</div>';
     $('#apXong').innerHTML = C.xong.length ? C.xong.map(x => item(x, true)).join('') : '<div class="empty">Chưa có.</div>';
+    if (goDuyet) {
+      const el = document.querySelector(`[data-ap="${CSS.escape(goDuyet)}"]`);
+      if (el) { el.classList.add('xd-hl'); setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'center' }), 150); }
+      else if (D.cho) toast('Lệnh ' + goDuyet + ' không còn chờ bạn duyệt.');
+      goDuyet = '';
+    }
   }
   async function decide(btn, id, ok) {
     let yKien = '';
@@ -115,26 +143,42 @@
   }
 
   /* ---------- Xe: thông tin + chuyến trước ---------- */
-  async function openCar(bien) {
+  function openCar(bien) {
     const c = D.cars.find(x => x.bien === bien); if (!c) return;
     $('#xdCarTitle').textContent = c.loai + ' · ' + c.bien;
     $('#xdCarInfo').innerHTML = `<span class="chip ${({ san: 'ok', sac: 'warn', di: 'acc', dat: 'acc', dv: 'warn' })[c.st] || 'mute'}">${esc(c.label)}</span>
       <span class="small muted">ODO ${c.odo === '' ? '—' : num(c.odo)} · pin ${c.pin == null ? '—' : c.pin + '%'}</span>`;
-    const free = c.st === 'san' || c.st === 'sac' || c.st === 'dv';
     const mine = c.mine && c.phieu;
-    $('#xdCarNew').hidden = !free && !mine;
+    $('#xdCarNew').hidden = c.st === 'ngung';
     $('#xdCarNew').textContent = mine ? 'Phiếu của bạn · ODO · Trả xe' : 'Lập phiếu';
     $('#xdCarNew').onclick = () => { closeS('xdCarDlg'); if (mine) openUse(c.phieu); else openForm(c, null); };
-    $('#xdLogList').innerHTML = '<div class="loading"><span class="spin"></span>Đang tải…</div>';
+    const lich = c.lich || [];
+    $('#xdLich').hidden = !lich.length;
+    $('#xdLichList').innerHTML = lich.map(l => `<div class="kv"><span>${l.mine ? '<b>Bạn</b>' : esc(l.nguoi)}${l.dang ? ' · <b style="color:var(--accent)">đang dùng</b>' : ''}</span><span class="mono">${esc(l.tu)} → ${esc(l.den)}</span></div>`).join('');
+    $('#xdLichHint').hidden = !lich.length || !!mine;
+    const t = c.truoc;
+    $('#xdLogList').innerHTML = t ? `<div class="card flat" style="padding:4px 14px">
+        <div class="kv"><span>Người mượn</span><b>${esc(t.nguoi)}${t.muc ? ' · ' + esc(t.muc) : ''}</b></div>
+        <div class="kv"><span>Trả xe lúc</span><span class="mono">${esc(t.tra || '—')}</span></div>
+        <div class="kv"><span>ODO kết thúc</span><span class="mono b">${esc(t.odoVe || '—')}</span></div>
+        <div class="kv"><span>Pin kết thúc</span><span class="mono b">${t.pin === '' || t.pin == null ? '—' : esc(t.pin) + '%'}</span></div></div>` : '<div class="empty">Chưa có chuyến nào.</div>';
     openS('xdCarDlg');
-    try {
-      const L = await api('xdLog', bien), t = L.truoc;
-      $('#xdLogList').innerHTML = t ? `<div class="card flat" style="padding:4px 14px">
-          <div class="kv"><span>Người mượn</span><b>${esc(t.nguoi)}${t.muc ? ' · ' + esc(t.muc) : ''}</b></div>
-          <div class="kv"><span>Trả xe lúc</span><span class="mono">${esc(t.tra || '—')}</span></div>
-          <div class="kv"><span>ODO kết thúc</span><span class="mono b">${esc(t.odoVe || '—')}</span></div>
-          <div class="kv"><span>Pin kết thúc</span><span class="mono b">${t.pin === '' || t.pin == null ? '—' : esc(t.pin) + '%'}</span></div></div>` : '<div class="empty">Chưa có chuyến nào.</div>';
-    } catch (e) { $('#xdLogList').innerHTML = `<div class="empty">${esc(e)}</div>`; }
+  }
+
+  /* ---------- Nhắc người duyệt: chia sẻ qua Zalo hoặc sao chép tin ---------- */
+  function nhacText(p) {
+    const car = D.cars.find(c => c.bien === p.bien) || {};
+    const goi = String(p.nguoiDuyet || '').split(/\s+/).pop();
+    const xung = / Thị /.test(' ' + p.nguoiDuyet + ' ') ? 'chị' : 'anh'; // tên đệm "Thị" (VD Huỳnh Thị Anh Đào) → chị, còn lại → anh
+    return 'Nhờ ' + xung + ' ' + goi + ' duyệt giúp lệnh xe:\n' +
+      [car.loai, p.bien].filter(Boolean).join(' ') + ' · ' + p.muc + (p.xa ? ' · đi xa' : '') + '\n' +
+      p.diDkHm + ' ' + (p.ngay || '') + ' → ' + p.veDkHm + ' · ' + D.me.ten + '\n' +
+      (p.loTrinh ? p.loTrinh + '\n' : '') + 'Duyệt tại: ' + SITE + '?duyet=' + encodeURIComponent(p.id);
+  }
+  let NH = null;
+  function openNhac(p) {
+    NH = p; $('#xdNhacWho').textContent = p.nguoiDuyet; $('#xdNhacTxt').textContent = nhacText(p);
+    $('#xdNhacShare').hidden = !navigator.share; openS('xdNhacDlg');
   }
 
   /* ---------- Bước 1: lập phiếu ---------- */
@@ -181,7 +225,8 @@
         printCache[p.id] = { cccd: $('#fCccd').value.trim(), capNgay: $('#fCapNgay').value.trim(), noiCap: $('#fNoiCap').value.trim() }; // chỉ giữ trên máy
         closeS('xdFormDlg'); toast('Đã lưu phiếu ' + p.id);
         if (thenPrint) doPrint(p);
-        load();
+        await load();
+        if (p.duyet === 'Chờ duyệt' && p.nguoiDuyet) openNhac(D.mine.find(x => x.id === p.id) || p);
       } catch (e) { fail(e); }
     });
   }
@@ -241,6 +286,7 @@
     $('#btnOut').onclick = logout;
     $('#tabs').onclick = e => { const b = e.target.closest('button[data-t]'); if (b) { tab = b.dataset.t; render(); if (tab === 'duyet') load(); } };
     $('#vXe').addEventListener('click', e => {
+      const nh = e.target.closest('[data-nhac]'); if (nh) { const p = D.mine.find(x => x.id === nh.dataset.nhac); if (p) openNhac(p); return; }
       const ph = e.target.closest('[data-phieu]'); if (ph) return openUse(ph.dataset.phieu);
       const c = e.target.closest('.xd-car'); if (c) return openCar(c.dataset.bien);
       const il = e.target.closest('[data-inlai]'); if (il) { const p = D.ganDay.find(x => x.id === il.dataset.inlai); if (p) doPrint(p); }
@@ -295,6 +341,8 @@
       });
     };
     $('#uReprint').onclick = () => doPrint(U);
+    $('#xdNhacShare').onclick = () => { navigator.share({ text: nhacText(NH) }).then(() => closeS('xdNhacDlg')).catch(() => {}); };
+    $('#xdNhacCopy').onclick = () => { copyText(nhacText(NH)); closeS('xdNhacDlg'); };
     $('#uLogBtn').onclick = () => { closeS('xdUseDlg'); openCar(U.bien); };
     $('#uEditBtn').onclick = () => { closeS('xdUseDlg'); openForm(D.cars.find(c => c.bien === U.bien) || { loai: '', bien: U.bien }, U); };
     $('#uCancelBtn').onclick = () => {

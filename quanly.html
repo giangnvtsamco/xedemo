@@ -18,7 +18,7 @@
 <link rel="icon" href="icon.svg?v=2" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon-180.png?v=2">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&family=Tinos:ital,wght@0,400;0,700;1,400&family=Arimo:wght@400;700&display=swap">
-<link rel="stylesheet" href="https://giangnvtsamco.github.io/samco-core/v1/style.css">
+<link rel="stylesheet" href="https://giangnvtsamco.github.io/samco-core/v1/style.css?v=1.1">
 <style>
   [hidden]{display:none!important}
   .req{color:var(--bad)}
@@ -33,6 +33,7 @@
   .it{display:flex;justify-content:space-between;align-items:center;gap:10px;border-top:1px solid var(--line);padding-top:8px;flex-wrap:wrap}
   .it .acts{display:flex;gap:6px;flex-wrap:wrap}
   .late{color:var(--bad);font-weight:700}
+  .warnt{color:var(--warn);font-weight:700}
   .dv-row{display:grid;grid-template-columns:110px 1fr 150px;gap:8px;align-items:center}
   @media (max-width:640px){.dv-row{grid-template-columns:1fr!important}}
   .hs{display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:16px;align-items:start}
@@ -58,7 +59,7 @@
 <section id="vLogin" class="loginbox" hidden>
   <div class="hd-l"><div class="brand">SAMCO</div><div class="title">Quản lý</div><div class="sub">Xe Demo · quản lý xe lái thử</div><div class="chrome"></div></div>
   <div class="card" style="display:flex;flex-direction:column;gap:12px">
-    <label class="field"><span class="lbl">Mã quản lý <span class="req">*</span></span><input id="lgPin" class="inp mono" type="password" inputmode="numeric" autocomplete="current-password"></label>
+    <label class="field"><span class="lbl">Mã quản lý <span class="req">*</span></span><input id="lgPin" class="inp mono" type="password" inputmode="numeric" autocomplete="current-password" maxlength="4" placeholder="4 số"></label>
     <button id="lgBtn" class="btn cta pri">Vào trang quản lý</button>
   </div>
   <a href="./" class="small" style="text-align:center;color:var(--muted)">Về trang nhân viên</a>
@@ -84,9 +85,11 @@
     <div id="apBox"></div>
     <div id="moBox"></div>
     <div id="khBox"></div>
+    <div id="hanBox"></div>
     <div id="dvBox"></div>
+    <div id="huyBox"></div>
     <div id="lechBox"></div>
-    <div class="tbl-wrap"><table class="tbl xe-tbl"><thead><tr><th>Xe</th><th>Biển số</th><th class="num">ODO</th><th class="num">Pin</th><th>Tình trạng</th><th class="num">Chuyến tháng</th><th class="num">Km tháng</th><th class="num">ODO lệch</th><th>Dùng gần nhất</th></tr></thead><tbody id="xeBody"><tr><td colspan="9"><div class="loading"><span class="spin"></span>Đang tải…</div></td></tr></tbody></table></div>
+    <div class="tbl-wrap"><table class="tbl xe-tbl"><thead><tr><th>Xe</th><th>Biển số</th><th class="num">ODO</th><th class="num">Pin</th><th>Tình trạng</th><th class="num">Chuyến tháng</th><th class="num">Km tháng</th><th class="num">ODO lệch</th><th>Dùng gần nhất</th><th>Hạn xe</th></tr></thead><tbody id="xeBody"><tr><td colspan="9"><div class="loading"><span class="spin"></span>Đang tải…</div></td></tr></tbody></table></div>
     <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:8px;flex-wrap:wrap">
       <span class="sect" id="lgHead">Nhật trình</span>
       <span class="hint">Ô đỏ: ODO đi khác lần trả trước. Sửa ODO phải ghi lý do; Sheet lưu lại giá trị cũ.</span>
@@ -123,6 +126,7 @@
     <div class="kpis" id="bcKpi"></div>
     <div class="pv" id="bcPv" style="max-height:none"><div class="empty">Chọn tháng và bấm Xem.</div></div>
   </section>
+  <div id="appFoot"></div>
 </main>
 
 <!-- Sổ nhật trình -->
@@ -193,8 +197,8 @@
 
 <script src="config.js"></script>
 <script src="https://giangnvtsamco.github.io/samco-core/v1/api.js"></script>
-<script src="https://giangnvtsamco.github.io/samco-core/v1/ui.js"></script>
-<script src="print.js?v=1.0.2"></script>
+<script src="https://giangnvtsamco.github.io/samco-core/v1/ui.js?v=1.1"></script>
+<script src="print.js?v=1.1.0"></script>
 <script>
 XP.init({ base: '' });
 let PIN = (() => { try { return sessionStorage.getItem('xedemo_admin') || ''; } catch (e) { return ''; } })();
@@ -218,6 +222,9 @@ $('#lgBtn').onclick = () => busy($('#lgBtn'), 'Đang kiểm tra', async () => {
   catch (e) { toast(e, 1); }
 });
 $('#lgPin').addEventListener('keydown', e => { if (e.key === 'Enter') $('#lgBtn').click(); });
+// đủ 4 số là tự vào, không cần bấm nút
+$('#lgPin').addEventListener('input', () => { const v = $('#lgPin').value.trim(); if (/^\d{4}$/.test(v) && !$('#lgBtn').disabled) $('#lgBtn').click(); });
+appFoot('Xe Demo · Quản lý', '1.1.0', $('#appFoot'));
 $('#btnOut').onclick = () => { PIN = ''; try { sessionStorage.removeItem('xedemo_admin'); } catch (e) {} showLogin(); };
 function start() { $('#vLogin').hidden = true; $('#vApp').hidden = false; load(); }
 
@@ -237,7 +244,7 @@ async function load(bien) {
     Q = await call('adminXe', PIN, bien || sel || '');
     sel = Q.bien;
     renderXe();
-  } catch (e) { if (!authFail(e)) $('#xeBody').innerHTML = `<tr><td colspan="9"><div class="empty">${esc(e)}</div></td></tr>`; }
+  } catch (e) { if (!authFail(e)) $('#xeBody').innerHTML = `<tr><td colspan="10"><div class="empty">${esc(e)}</div></td></tr>`; }
 }
 /* Trạng thái duyệt kèm người duyệt: "Tú (Tổ trưởng nhóm 4) đã duyệt giấy" */
 function chipD(r) {
@@ -255,8 +262,9 @@ function renderXe() {
   $('#xeBody').innerHTML = Q.cars.map(c => `<tr data-bien="${esc(c.bien)}" class="${c.bien === sel ? 'on' : ''}">
     <td><b>${esc(c.loai)}</b></td><td class="mono">${esc(c.bien)}</td><td class="num">${c.odo === '' ? '—' : num(c.odo)}</td><td class="num">${c.pin == null ? '—' : c.pin + '%'}</td>
     <td><span class="chip ${ST_CHIP[c.st] || 'mute'}">${esc(c.label)}</span></td><td class="num">${c.chuyen}</td><td class="num">${num(c.km)}</td>
-    <td class="num" style="${c.lech ? 'color:var(--bad);font-weight:700' : ''}">${c.lech}</td><td class="small">${esc(c.cuoi || '—')}${c.ngayCuoi && Q.today - c.ngayCuoi > 30 ? ' <b style="color:var(--warn)">· ' + (Q.today - c.ngayCuoi) + ' ngày chưa dùng</b>' : ''}</td></tr>`).join('');
+    <td class="num" style="${c.lech ? 'color:var(--bad);font-weight:700' : ''}">${c.lech}</td><td class="small">${esc(c.cuoi || '—')}${c.ngayCuoi && Q.today - c.ngayCuoi > 30 ? ' <b style="color:var(--warn)">· ' + (Q.today - c.ngayCuoi) + ' ngày chưa dùng</b>' : ''}</td><td class="small" style="white-space:nowrap">${hanCell(c)}</td></tr>`).join('');
   const car = Q.cars.find(c => c.bien === sel) || {};
+  renderHan(); renderHuy();
   $('#lgHead').textContent = 'Nhật trình · ' + (car.loai || '') + ' ' + sel;
   $('#lgBody').innerHTML = Q.rows.length ? Q.rows.map(r => {
     const edit = r.trangThai === 'Đã trả';
@@ -285,7 +293,7 @@ function renderXe() {
     <div class="small"><b>${esc(L[m.bien] || '')} ${esc(m.bien)}</b> · ${esc(m.nguoi)} · ${esc(m.di)} · ${esc(m.nguoiDuyet)}: <b style="color:var(--bad)">${esc(m.yKien)}</b></div>
     <div class="acts"><button class="btn sm out" data-giay>Đã có chữ ký giấy</button></div></div>`).join('')}</details>` : '';
   $('#dvBox').innerHTML = Q.dv.length ? `<div class="box"><span class="sect">Xe đang ở Phòng Dịch vụ</span>${Q.dv.map(d => `<div style="display:flex;flex-direction:column;gap:6px;border-top:1px solid var(--line);padding-top:8px">
-    <div class="small"><b>${esc(d.id)}</b> · giao ${esc(d.giao)}${d.nhanDk ? ' · hẹn nhận ' + esc(d.nhanDk) : ''} · ${esc(d.congViec)} <button class="btn sm" data-reprint="${esc(d.id)}" style="margin-left:6px">In lại</button></div>
+    <div class="small"><b>${esc(d.id)}</b> · giao ${esc(d.giao)}${d.nhanDk ? ' · hẹn nhận ' + esc(d.nhanDk) : ''} · ${esc(d.congViec)} <button class="btn sm" data-reprint="${esc(d.id)}" style="margin-left:6px">In lại</button>${d.cho.length > 1 ? `<button class="btn sm ok" data-nhanall="${esc(d.id)}" style="margin-left:6px">Nhận lại cả ${d.cho.length} xe</button>` : ''}</div>
     ${d.cho.map(x => `<div class="dv-row" data-lt="${esc(x.id)}"><span><b>${esc(x.loai)}</b> <span class="mono small">${esc(x.bien)}</span></span>
       <span style="display:flex;gap:6px"><input class="inp mono" data-k="odo" placeholder="ODO nhận lại" style="min-height:36px;max-width:150px" value="${esc(x.odoDi)}"><input class="inp mono" data-k="pin" placeholder="Pin % (nếu đổi)" style="min-height:36px;max-width:130px"></span>
       <button class="btn sm ok" data-nhan>Nhận lại xe</button></div>`).join('')}</div>`).join('')}</div>` : '';
@@ -295,6 +303,38 @@ function renderXe() {
   $('#fXe').innerHTML = '<option value="">Tất cả xe</option>' + Q.cars.map(c => `<option value="${esc(c.bien)}">${esc(c.loai)} · ${esc(c.bien)}</option>`).join('');
   $('#nvList').innerHTML = (Q.nhanVien || []).map(n => `<option value="${esc(n)}">`).join('');
 }
+/* Hạn xe: Dùng đến (24 tháng) · Bảo hiểm · Đăng kiểm. Nhắc trước 30 ngày. */
+const HAN_NHAC = 30;
+const hanTxt = h => h.con == null ? '' : h.con < 0 ? 'quá hạn ' + (-h.con) + ' ngày' : h.con === 0 ? 'hết hạn hôm nay' : 'còn ' + h.con + ' ngày';
+function hanCell(c) {
+  return (c.han || []).map(h => h.ngay ? `<div class="${h.con < 0 ? 'late' : h.con <= HAN_NHAC ? 'warnt' : 'muted'}">${esc(h.k)} ${esc(h.ngay)}</div>` : `<div class="muted">${esc(h.k)}: chưa điền</div>`).join('');
+}
+function renderHan() {
+  const can = [], thieu = [];
+  Q.cars.filter(c => c.st !== 'ngung').forEach(c => (c.han || []).forEach(h => {
+    if (!h.ngay) thieu.push(c); else if (h.con <= HAN_NHAC) can.push({ c, h });
+  }));
+  can.sort((a, b) => a.h.con - b.h.con);
+  const nThieu = new Set(thieu.map(c => c.bien)).size;
+  $('#hanBox').innerHTML = can.length || nThieu ? `<div class="box" style="${can.some(x => x.h.con < 0) ? 'border-color:var(--bad)' : ''}"><span class="sect">Hạn xe cần chú ý${can.length ? ' · ' + can.length : ''}</span>
+    ${can.map(x => `<div class="it"><div class="small"><b>${esc(x.c.loai)} ${esc(x.c.bien)}</b> · ${esc(x.h.k)} đến ${esc(x.h.ngay)} · <b class="${x.h.con < 0 ? 'late' : 'warnt'}">${esc(hanTxt(x.h))}</b></div></div>`).join('')}
+    ${nThieu ? `<span class="hint">${nThieu} xe chưa điền đủ ngày (Ngày đăng ký, Bảo hiểm đến, Đăng kiểm đến). Điền trong sheet XE_DEMO; "Dùng đến (24 tháng)" để trống thì app tự tính từ ngày đăng ký.</span>` : ''}</div>` : '';
+}
+/* Lệnh đã hủy trong 30 ngày: khôi phục về đúng trạng thái trước khi hủy */
+function renderHuy() {
+  const L = LOAI(), H = Q.huy || [];
+  $('#huyBox').innerHTML = H.length ? `<details class="box"><summary class="sect" style="cursor:pointer">Lệnh đã hủy · 30 ngày · ${H.length}</summary>${H.map(m => `<div class="it" data-huyid="${esc(m.id)}">
+    <div class="small" style="min-width:0"><b>${esc(L[m.bien] || '')} ${esc(m.bien)}</b> · ${esc(m.nguoi)} · ${esc(m.muc)}${m.kh ? ' · ' + esc(m.kh) : ''} · ${esc(m.di)} → ${esc(m.ve)}<br>
+      <span class="muted">Hủy ${esc(m.huyLuc)}${m.lyDo ? ' · ' + esc(m.lyDo) : ''} · trước khi hủy: ${esc(m.truoc)}</span> ${chipD(m)}</div>
+    <div class="acts"><button class="btn sm pri" data-khoiphuc>Khôi phục</button></div></div>`).join('')}</details>` : '';
+}
+$('#huyBox').addEventListener('click', e => {
+  const b = e.target.closest('[data-khoiphuc]'); if (!b) return;
+  const id = b.closest('[data-huyid]').dataset.huyid, m = (Q.huy || []).find(x => x.id === id);
+  if (!confirm('Khôi phục lệnh ' + id + ' của ' + m.nguoi + ' về "' + m.truoc + '"?')) return;
+  busy(b, '', async () => { try { const st = await call('adminLtRestore', PIN, id); toast('Đã khôi phục · ' + st); load(); } catch (err) { toast(err, 1); } });
+});
+
 $('#lechBox').onclick = e => { const it = e.target.closest('[data-lech]'); if (it) { load(it.dataset.lech); setTimeout(() => $('#lgHead').scrollIntoView({ behavior: 'smooth' }), 400); } };
 $('#xeBody').onclick = e => { const tr = e.target.closest('tr[data-bien]'); if (tr) load(tr.dataset.bien); };
 $('#lgBody').addEventListener('input', e => {
@@ -330,6 +370,11 @@ async function printId(id, kind) {
 }));
 $('#dvBox').addEventListener('click', e => {
   const rp = e.target.closest('[data-reprint]'); if (rp) return XP.print([XP.lenhDv(dvFromRecord(Q.dv.find(x => x.id === rp.dataset.reprint)))]);
+  const all = e.target.closest('[data-nhanall]');
+  if (all) {
+    if (!confirm('Nhận lại cả ' + all.dataset.nhanall + '? ODO và pin của từng xe giữ như lúc giao (xe nào khác thì nhận lại riêng xe đó).')) return;
+    return busy(all, '', async () => { try { const n = await call('adminDvReturnAll', PIN, all.dataset.nhanall); toast('Đã nhận lại ' + n + ' xe'); load(); } catch (err) { toast(err, 1); } });
+  }
   const b = e.target.closest('[data-nhan]'); if (!b) return;
   const row = b.closest('[data-lt]');
   busy(b, '', async () => { try { await call('adminDvReturn', PIN, row.dataset.lt, { odoVe: $('[data-k=odo]', row).value, pin: $('[data-k=pin]', row).value.trim() }); toast('Đã nhận lại xe'); load(); } catch (err) { toast(err, 1); } });
