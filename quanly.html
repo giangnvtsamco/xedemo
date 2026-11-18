@@ -52,6 +52,15 @@
   .kpis .l{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:700}
   .kpis b{font-family:var(--display);font-weight:400;font-size:26px;line-height:1}
   .kpis .warn b{color:var(--warn)}.kpis .bad b{color:var(--bad)}
+  /* VETC */
+  .vt-in{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
+  .vt-drop{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:104px;border:1.5px dashed var(--line);border-radius:12px;background:var(--paper-2);cursor:pointer;text-align:center;padding:12px}
+  .vt-drop:hover{border-color:var(--accent)}
+  .dim{opacity:.45;pointer-events:none}
+  .vt-grid{display:grid;grid-template-columns:minmax(320px,440px) minmax(0,1fr);gap:16px;align-items:start}
+  @media (max-width:1000px){.vt-grid{grid-template-columns:1fr}}
+  .vt-tbl{min-width:760px}.vt-tbl td{vertical-align:top}.vt-tbl tr.off td{opacity:.5;text-decoration:line-through}
+  .vt-tbl td.nw{white-space:nowrap}
 </style>
 </head>
 <body>
@@ -69,7 +78,7 @@
   <div class="hd" style="flex-wrap:wrap">
     <div class="hd-l"><div class="brand">SAMCO</div><div class="title" id="pgTitle">Xe demo</div><div class="sub" id="pgSub">Duyệt lệnh · xe · nhật trình</div><div class="chrome"></div></div>
     <div class="tabs-top" id="tabs">
-      <button class="on" data-v="Xe">Xe &amp; duyệt</button><button data-v="HoSo">Hồ sơ &amp; in ấn</button><button data-v="BaoCao">Báo cáo</button><button id="btnOut">Thoát</button>
+      <button class="on" data-v="Xe">Xe &amp; duyệt</button><button data-v="HoSo">Hồ sơ &amp; in ấn</button><button data-v="BaoCao">Báo cáo</button><button data-v="Vetc">VETC</button><button id="btnOut">Thoát</button>
     </div>
   </div>
 
@@ -125,6 +134,43 @@
       <button class="btn pri" id="bcGo" style="align-self:flex-end">Xem</button><button class="btn out" id="bcPrint" style="align-self:flex-end" disabled>In báo cáo</button></div>
     <div class="kpis" id="bcKpi"></div>
     <div class="pv" id="bcPv" style="max-height:none"><div class="empty">Chọn tháng và bấm Xem.</div></div>
+  </section>
+  <!-- ===== VETC (vetc.js) ===== -->
+  <section id="vVetc" style="display:flex;flex-direction:column;gap:14px" hidden>
+    <div id="vtBody"></div>
+    <div id="vtMain" style="display:flex;flex-direction:column;gap:14px" hidden>
+      <div class="vt-in">
+        <div class="box"><span class="sect">1 · Bảng kê hóa đơn điện tử (Excel từ VETC)</span>
+          <label class="vt-drop" for="vtXls"><b id="vtXlsLbl">Chọn file Excel</b><span class="hint" id="vtXlsInfo"></span></label>
+          <input id="vtXls" type="file" accept=".xlsx,.xls" hidden></div>
+        <div class="box" id="vtStep2"><span class="sect">2 · Hóa đơn PDF (chọn tất cả cùng lúc)</span>
+          <label class="vt-drop" for="vtPdf"><b>Chọn các file hóa đơn PDF</b><span class="hint">App đọc mã giao dịch trên từng hóa đơn để ghép đúng dòng bảng kê. Chọn thêm lần nữa được.</span></label>
+          <input id="vtPdf" type="file" accept="application/pdf" multiple hidden>
+          <div class="bar"><span class="small muted" id="vtPdfMsg"></span><button class="btn sm" id="vtPdfClear" style="margin-left:auto">Bỏ các file đã chọn</button></div></div>
+      </div>
+      <div id="vtCheck" style="display:flex;flex-direction:column;gap:14px" hidden>
+        <div class="kpis" id="vtKpi"></div>
+        <div id="vtWarn" style="display:flex;flex-direction:column;gap:4px"></div>
+        <div class="tbl-wrap"><table class="tbl vt-tbl"><thead><tr><th>#</th><th>Thời gian</th><th>Xe</th><th>Trạm</th><th class="num">Số tiền</th><th>Số HĐ</th><th>Hóa đơn PDF</th></tr></thead><tbody id="vtBody2"></tbody></table></div>
+        <div class="vt-grid">
+          <div class="box">
+            <span class="sect">3 · Giấy đề nghị thanh toán</span>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+              <label class="field"><span class="lbl">Ngày đề nghị</span><input class="inp mono" type="date" id="vtNgay"></label>
+              <label class="field"><span class="lbl">Bộ phận</span><input class="inp" id="vtBoPhan"></label></div>
+            <label class="field"><span class="lbl">Người đề nghị</span><input class="inp" id="vtNguoi"></label>
+            <label class="field"><span class="lbl">Nội dung thanh toán</span><textarea class="inp" id="vtNd" style="min-height:84px"></textarea></label>
+            <div class="small"><b>Tổng:</b> <span id="vtTong"></span></div>
+            <div class="bar"><button class="btn pri" id="vtMake" style="letter-spacing:.08em;font-weight:800" disabled>TẠO BỘ HỒ SƠ PDF</button>
+              <a class="btn out" id="vtDl" hidden>Tải PDF về máy</a></div>
+            <span class="hint">Thứ tự: Giấy đề nghị · Bảng kê · hóa đơn (cũ đến mới). App lưu luôn 1 bản vào Drive "Xe Lái Thử/VETC" và ghi sổ.</span>
+          </div>
+          <div class="pv" id="vtPv" style="max-height:none"></div>
+        </div>
+      </div>
+      <span class="sect">Các tháng đã lập</span>
+      <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Tháng</th><th class="num">Lượt</th><th class="num">Tổng tiền</th><th>Ngày đề nghị</th><th>File</th><th>Trạng thái</th></tr></thead><tbody id="vtList"></tbody></table></div>
+    </div>
   </section>
   <div id="appFoot"></div>
 </main>
@@ -224,11 +270,11 @@ $('#lgBtn').onclick = () => busy($('#lgBtn'), 'Đang kiểm tra', async () => {
 $('#lgPin').addEventListener('keydown', e => { if (e.key === 'Enter') $('#lgBtn').click(); });
 // đủ 4 số là tự vào, không cần bấm nút
 $('#lgPin').addEventListener('input', () => { const v = $('#lgPin').value.trim(); if (/^\d{4}$/.test(v) && !$('#lgBtn').disabled) $('#lgBtn').click(); });
-appFoot('Xe Demo · Quản lý', '1.1.0', $('#appFoot'));
+appFoot('Xe Demo · Quản lý', '1.2.0', $('#appFoot'));
 $('#btnOut').onclick = () => { PIN = ''; try { sessionStorage.removeItem('xedemo_admin'); } catch (e) {} showLogin(); };
 function start() { $('#vLogin').hidden = true; $('#vApp').hidden = false; load(); }
 
-const VIEWS = { Xe: ['Xe demo', 'Duyệt lệnh · xe · nhật trình'], HoSo: ['Hồ sơ & in ấn', 'Lọc phiếu, xem trước và in đúng mẫu'], BaoCao: ['Báo cáo', 'Báo cáo tháng gọn · đối chiếu KSCL'] };
+const VIEWS = { Xe: ['Xe demo', 'Duyệt lệnh · xe · nhật trình'], HoSo: ['Hồ sơ & in ấn', 'Lọc phiếu, xem trước và in đúng mẫu'], BaoCao: ['Báo cáo', 'Báo cáo tháng gọn · đối chiếu KSCL'], Vetc: ['Thanh toán VETC', 'Bảng kê + hóa đơn → 1 bộ hồ sơ PDF'] };
 $('#tabs').onclick = e => {
   const b = e.target.closest('button[data-v]'); if (!b) return;
   $$('#tabs button[data-v]').forEach(x => x.classList.toggle('on', x === b));
@@ -236,6 +282,7 @@ $('#tabs').onclick = e => {
   $('#pgTitle').textContent = VIEWS[b.dataset.v][0]; $('#pgSub').textContent = VIEWS[b.dataset.v][1];
   if (b.dataset.v === 'HoSo' && !HS.length) loadHs();
   if (b.dataset.v === 'BaoCao' && !BC) loadBc();
+  if (b.dataset.v === 'Vetc') vetcOpen();
 };
 
 /* ---------- XE & DUYỆT ---------- */
@@ -537,5 +584,6 @@ $('#bcPrint').onclick = () => BC && XP.print([XP.bao(BC)]);
 
 if (PIN) start(); else showLogin();
 </script>
+<script src="vetc.js?v=1.2.0"></script>
 </body>
 </html>
