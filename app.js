@@ -1,4 +1,4 @@
-/* Xe Demo · trang nhân viên · v1.1
+/* Xe Demo · trang nhân viên · v1.3
    Cần nạp trước: config.js, samco-core api.js + ui.js, print.js. */
 (function () {
   const pad = n => String(n).padStart(2, '0');
@@ -8,7 +8,7 @@
   const KEY = 'xedemo_auth';
   let A = (() => { try { return JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { return null; } })();
   let D = null, STAFF = [], tab = 'xe', printCache = {};
-  const APP_V = '1.1.0', SITE = 'https://xedemo.vinfastsamcobinhtan.com/';
+  const APP_V = '1.3.0', SITE = 'https://xedemo.vinfastsamcobinhtan.com/';
   // Lưu bản dữ liệu gần nhất trên máy: mở app là thấy ngay, rồi cập nhật ngầm
   const cKey = () => 'xedemo_cache_' + (A && A.ten || '');
   const cacheGet = () => { try { return JSON.parse(localStorage.getItem(cKey()) || 'null'); } catch (e) { return null; } };
@@ -146,9 +146,12 @@
   function openCar(bien) {
     const c = D.cars.find(x => x.bien === bien); if (!c) return;
     $('#xdCarTitle').textContent = c.loai + ' · ' + c.bien;
-    $('#xdCarInfo').innerHTML = `<span class="chip ${({ san: 'ok', sac: 'warn', di: 'acc', dat: 'acc', dv: 'warn' })[c.st] || 'mute'}">${esc(c.label)}</span>
+    $('#xdCarInfo').innerHTML = `<span class="chip ${({ san: 'ok', sac: 'warn', di: 'acc', dat: 'acc', dv: 'warn', giu: 'warn' })[c.st] || 'mute'}">${esc(c.label)}</span>
       <span class="small muted">ODO ${c.odo === '' ? '—' : num(c.odo)} · pin ${c.pin == null ? '—' : c.pin + '%'}</span>`;
     const mine = c.mine && c.phieu;
+    // xe giao cố định (Giám đốc, XMĐ…): vẫn lấy được, hỏi người giữ trước
+    $('#xdCarGiu').hidden = !c.giu || c.st === 'ngung';
+    $('#xdCarGiu').innerHTML = c.giu ? 'Xe <b>' + esc(c.giu) + '</b> đang giữ. Vui lòng hỏi ' + esc(c.giu) + ' trước khi lấy xe.' : '';
     $('#xdCarNew').hidden = c.st === 'ngung';
     $('#xdCarNew').textContent = mine ? 'Phiếu của bạn · ODO · Trả xe' : 'Lập phiếu';
     $('#xdCarNew').onclick = () => { closeS('xdCarDlg'); if (mine) openUse(c.phieu); else openForm(c, null); };
@@ -197,6 +200,8 @@
     v('fLoTrinh', p && p.loTrinh); v('fDiDk', p ? p.diDk : isoNow(10)); v('fVeDk', p ? p.veDk : isoNow(70));
     $$('#fPhoto button').forEach(b => { b.classList.remove('has'); b.textContent = b.dataset.side === 'truoc' ? 'Bằng lái mặt trước' : 'Mặt sau'; });
     syncForm(); openS('xdFormDlg');
+    const st = $('#fPkdSt'); st.style.color = ''; st.textContent = 'Máy in PKD lầu 1: lưu phiếu và in thẳng ra máy in Phòng Kinh Doanh, không cần kết nối điện thoại.';
+    api('inTram').then(t => { if (!t.bat) { st.style.color = 'var(--warn)'; st.textContent = 'Máy in PKD lầu 1 đang tắt: vẫn gửi được, máy bật là tự in (trong 6 giờ).'; } }).catch(() => {});
   }
   function syncForm() {
     const lt = F.muc === 'Khách lái thử';
@@ -224,16 +229,71 @@
         const p = await api('xdSave', d, F.id);
         printCache[p.id] = { cccd: $('#fCccd').value.trim(), capNgay: $('#fCapNgay').value.trim(), noiCap: $('#fNoiCap').value.trim() }; // chỉ giữ trên máy
         closeS('xdFormDlg'); toast('Đã lưu phiếu ' + p.id);
-        if (thenPrint) doPrint(p);
+        if (thenPrint) doPrint(p, thenPrint);
         await load();
         if (p.duyet === 'Chờ duyệt' && p.nguoiDuyet) openNhac(D.mine.find(x => x.id === p.id) || p);
       } catch (e) { fail(e); }
     });
   }
-  function doPrint(p) {
+  /* ---------- In hồ sơ: ở máy in Phòng Kinh Doanh lầu 1 (trạm in) hoặc trên máy này ---------- */
+  let PJ = null, inT = 0;
+  // bỏ ảnh và chuỗi dài: hồ sơ in chỉ cần chữ, gửi đi cho nhẹ
+  const gon = o => { const r = {}; Object.keys(o).forEach(k => { const v = o[k]; if (typeof v === 'string' && (v.length > 2000 || /^data:/.test(v))) return; r[k] = v; }); return r; };
+  // cach: 'may' = in ngay trên máy này · 'pkd' = gửi thẳng máy in PKD lầu 1 · bỏ trống = hỏi chọn
+  function doPrint(p, cach) {
     const car = D.cars.find(c => c.bien === p.bien) || {};
-    const x = Object.assign({}, p, { loai: car.loai || p.loai || '', nguoi: D.me.ten, vaiTro: D.me.vaiTro, boPhan: D.me.boPhan });
-    XP.print(XP.hoSo(x, printCache[p.id]));
+    const x = gon(Object.assign({}, p, { loai: car.loai || p.loai || '', nguoi: D.me.ten, vaiTro: D.me.vaiTro, boPhan: D.me.boPhan }));
+    clearTimeout(inT);
+    PJ = { x, cc: printCache[p.id] || null };
+    if (cach === 'may') return XP.print(XP.hoSo(x, PJ.cc));
+    $('#xdInId').textContent = 'Phiếu ' + p.id + ' · ' + (XP.hoSo(x, PJ.cc).length) + ' trang A4';
+    $('#inChon').hidden = false; $('#inCho').hidden = true; $('#inCongTy').disabled = false;
+    tram(null); openS('xdInDlg');
+    if (cach === 'pkd') return inGui();
+    api('inTram').then(t => tram(t.bat)).catch(() => tram(false));
+  }
+  function tram(bat) {
+    const el = $('#inTram');
+    el.className = 'xd-tram' + (bat === true ? ' on' : bat === false ? ' off' : '');
+    el.querySelector('span').innerHTML = bat === null ? 'Đang kiểm tra máy in Phòng Kinh Doanh lầu 1…'
+      : bat ? 'Máy in Phòng Kinh Doanh lầu 1 sẵn sàng<small>In xong trong khoảng 10 giây.</small>'
+      : 'Máy trạm in đang tắt<small>Vẫn gửi được: hồ sơ tự in khi máy bật (giữ tối đa 6 giờ). Cần gấp: báo IT hoặc In trên máy này.</small>';
+  }
+  function inStt(kind, html) {
+    $('#inChon').hidden = true; $('#inCho').hidden = false;
+    $('#inStt').className = 'xd-instt' + (kind === 'ok' ? ' ok' : '');
+    $('#inStt').innerHTML = (kind === 'cho' ? '<div class="xd-spin"></div>' : '') + html;
+    $('#inMay2').hidden = kind === 'ok';
+  }
+  function inLocal() { if (!PJ) return; clearTimeout(inT); closeS('xdInDlg'); XP.print(XP.hoSo(PJ.x, PJ.cc)); }
+  function inGui() {
+    const job = PJ; if (!job) return;
+    inStt('cho', '<b>Đang gửi đến máy in Phòng Kinh Doanh lầu 1…</b>');
+    (async () => {
+      try {
+        const r = await api('inGui', { x: job.x, cc: job.cc });
+        job.jid = r.jid;
+        inStt('cho', '<b>Đã gửi đến máy in Phòng Kinh Doanh lầu 1</b><span class="small muted">' + (r.truoc ? 'Phía trước còn ' + r.truoc + ' hồ sơ. ' : '') + (r.tram ? 'Đang chờ in…' : 'Máy trạm đang tắt: hồ sơ sẽ tự in khi máy bật (trong 6 giờ).') + '</span>');
+        doi(job, 0);
+      } catch (e) { if (PJ === job) inStt('', '<b>Chưa gửi được</b><span class="small muted">' + esc(String(e)) + '</span>'); fail(e); }
+    })();
+  }
+  // xem lệnh in đã in chưa: 3 giây/lần, tối đa ~2 phút
+  function doi(job, n) {
+    inT = setTimeout(async () => {
+      if (PJ !== job) return;
+      let r = null; try { r = await api('inStatus', job.jid); } catch (e) {}
+      if (PJ !== job) return;
+      const mo = !sheet('xdInDlg').hidden;
+      if (r && r.tt === 'Đã in') {
+        inStt('ok', '<b>Đã in xong</b><span class="small muted">Lấy hồ sơ ở máy in Phòng Kinh Doanh lầu 1.</span>');
+        if (!mo) toast('Đã in xong hồ sơ ' + job.x.id + ' ở Phòng Kinh Doanh lầu 1.');
+        return;
+      }
+      if (r && r.tt === 'Hết hạn') { inStt('', '<b>Lệnh in đã hết hạn</b><span class="small muted">Vui lòng gửi in lại.</span>'); return; }
+      if (n >= 40) { inStt('', '<b>Hồ sơ đang trong hàng chờ</b><span class="small muted">Sẽ tự in khi máy trạm bật (giữ tối đa 6 giờ). Cần gấp: báo IT hoặc In trên máy này.</span>'); return; }
+      doi(job, n + 1);
+    }, 3000);
   }
 
   /* ---------- Bước 2: lên xe / trả xe ---------- */
@@ -314,7 +374,8 @@
         const b = $('#fPhoto [data-side=' + side + ']'); b.classList.add('has'); b.textContent = (side === 'truoc' ? 'Mặt trước' : 'Mặt sau') + ' · đã chụp';
       } catch (err) { toast(err, 1); }
     };
-    $('#fPrintBtn').onclick = () => saveForm($('#fPrintBtn'), true);
+    $('#fPrintBtn').onclick = () => saveForm($('#fPrintBtn'), 'may');
+    $('#fPkdBtn').onclick = () => saveForm($('#fPkdBtn'), 'pkd');
     ['#uOdoDi', '#uOdoVe', '#uGioDi', '#uGioVe'].forEach(s => $(s).addEventListener('input', calcKm));
     // Pin dưới 80%: nhắc bắt buộc sạc lên trên 90% (quy tắc VinFast)
     const PIN_SAC = 80;
@@ -340,7 +401,10 @@
         try { const r = await api('xdReturn', U.id, d); closeS('xdUseDlg'); toast(Number(d.pin) < PIN_SAC ? 'Đã trả xe. Pin ' + d.pin + '%: vui lòng sạc lên trên 90%. Bận chưa sạc được thì báo Giang liền.' : 'Đã trả xe' + (r.km !== '' ? ' · ' + r.km + ' km' : '') + '. Cảm ơn anh/chị.'); load(); } catch (e) { fail(e); }
       });
     };
-    $('#uReprint').onclick = () => doPrint(U);
+    $('#uReprint').onclick = () => doPrint(U, 'may');
+    $('#uPkd').onclick = () => doPrint(U, 'pkd');
+    $('#inCongTy').onclick = inGui;
+    $('#inMay').onclick = inLocal; $('#inMay2').onclick = inLocal;
     $('#xdNhacShare').onclick = () => { navigator.share({ text: nhacText(NH) }).then(() => closeS('xdNhacDlg')).catch(() => {}); };
     $('#xdNhacCopy').onclick = () => { copyText(nhacText(NH)); closeS('xdNhacDlg'); };
     $('#uLogBtn').onclick = () => { closeS('xdUseDlg'); openCar(U.bien); };
