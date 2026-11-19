@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#1f4e8c">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Xe Demo">
@@ -22,6 +22,9 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&family=Tinos:ital,wght@0,400;0,700;1,400&family=Arimo:wght@400;700&display=swap">
 <link rel="stylesheet" href="https://giangnvtsamco.github.io/samco-core/v1/style.css?v=1.1">
 <style>
+  /* trải nghiệm như app: chạm 2 lần không phóng to, không nháy xanh khi chạm */
+  html{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+  button,a,label,.xd-car{-webkit-tap-highlight-color:transparent}
   [hidden]{display:none!important}
   .xd-mine{display:flex;flex-direction:column;gap:6px;background:var(--accent-soft);border:1px solid var(--accent);border-radius:14px;padding:12px 14px}
   .xd-mine button{display:flex;justify-content:space-between;align-items:center;gap:8px;border:0;background:none;padding:6px 0;text-align:left;cursor:pointer;font-size:14px;color:inherit;border-top:1px solid color-mix(in srgb,var(--accent) 25%,transparent)}
@@ -34,7 +37,7 @@
   .xd-car .b{font-family:var(--mono);font-size:12px;color:var(--muted)}
   .xd-car .s{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;margin-top:auto}
   .xd-car .s i{width:8px;height:8px;border-radius:99px;flex-shrink:0;background:currentColor}
-  .xd-san{color:var(--ok)}.xd-di,.xd-dat{color:var(--accent)}.xd-sac,.xd-dv{color:var(--warn)}.xd-ngung{color:var(--muted)}
+  .xd-san{color:var(--ok)}.xd-giu{color:var(--warn,#a85d00)}.xd-di,.xd-dat{color:var(--accent)}.xd-sac,.xd-dv{color:var(--warn)}.xd-ngung{color:var(--muted)}
   .xd-sec{display:flex;flex-direction:column;gap:10px;background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
   .xd-2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
   .xd-xa{background:var(--warn-soft,#fdf2df);border:1px solid var(--warn,#a85d00);border-radius:14px;padding:10px 14px;align-items:flex-start;flex-shrink:0;line-height:1.4}
@@ -42,6 +45,8 @@
   .xd-pinwarn{display:flex;flex-direction:column;gap:2px;background:var(--bad-soft,#fdeceb);border:1px solid var(--bad,#c3281f);color:var(--bad,#c3281f);border-radius:12px;padding:10px 12px;font-size:13px;flex-shrink:0}
   .xd-pinwarn span{color:var(--ink)}
   .xd-xa b{color:var(--warn,#a85d00);font-weight:800}
+  .xd-giunote{background:var(--warn-soft,#fdf2df);border:1px solid var(--warn,#a85d00);border-radius:12px;padding:10px 12px;font-size:13px;line-height:1.45}
+  .xd-giunote b{color:var(--warn,#a85d00)}
   .xd-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
   .xd-3 .lbl{white-space:nowrap;letter-spacing:.08em}
   .xd-cond{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 0;border-top:1px solid var(--line);font-size:13px;font-weight:600}
@@ -58,6 +63,17 @@
   .seg{display:flex;background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:3px}
   .seg button{flex:1;font:inherit;font-weight:700;font-size:13px;min-height:38px;border:0;background:transparent;color:var(--muted);border-radius:999px;cursor:pointer}
   .seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+  .xd-2b{display:grid;grid-template-columns:1fr 1.2fr;gap:8px}
+  .xd-in2 .btn{min-height:44px;font-weight:700}
+  .xd-2b .btn.cta{letter-spacing:.04em;font-size:13px;padding:0 6px;white-space:nowrap}
+  .xd-tram{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+  .xd-tram i{width:9px;height:9px;border-radius:99px;flex-shrink:0;background:var(--muted)}
+  .xd-tram.on i{background:var(--ok)}.xd-tram.off i{background:var(--warn,#a85d00)}
+  .xd-tram span{display:flex;flex-direction:column;gap:2px}.xd-tram small{font-weight:400;color:var(--muted);font-size:12px;line-height:1.4}
+  .xd-instt{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;padding:14px 8px;font-size:14px}
+  .xd-instt b{font-size:16px}.xd-instt.ok b{color:var(--ok)}
+  .xd-spin{width:26px;height:26px;border-radius:99px;border:3px solid var(--line);border-top-color:var(--accent);animation:xdspin .9s linear infinite}
+  @keyframes xdspin{to{transform:rotate(360deg)}}
   .apv{background:var(--accent-soft);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:2px}
   .apv b{color:var(--accent)}
   .badge{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 6px;border-radius:99px;background:var(--bad);color:#fff;font-size:11px;font-weight:800;margin-left:4px}
@@ -133,6 +149,7 @@
 <div class="sheet-bg" id="xdCarDlg" hidden><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="xdCarTitle"><div class="grab"></div>
   <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><div id="xdCarTitle" style="font-family:var(--display);font-size:24px;text-transform:uppercase"></div><button class="btn sm" data-close="xdCarDlg">Đóng</button></div>
   <div id="xdCarInfo" style="display:flex;justify-content:space-between;align-items:center;gap:8px"></div>
+  <div class="xd-giunote" id="xdCarGiu" hidden></div>
   <button class="btn cta pri" id="xdCarNew">Lập phiếu</button>
   <div id="xdLich" hidden style="display:flex;flex-direction:column;gap:6px"><span class="sect">Lịch đã đặt</span>
     <div class="card flat" style="padding:4px 14px" id="xdLichList"></div>
@@ -176,8 +193,8 @@
       <label class="field"><span class="lbl">Giờ về dự kiến <span class="req">*</span></span><input class="inp mono" id="fVeDk" type="datetime-local"></label></div>
     <span class="hint">ODO và pin điền sau, lúc lên xe hoặc khi trả xe.</span></div>
   <div class="apv" id="fApv"></div>
-  <button class="btn cta pri" id="fPrintBtn">LƯU PHIẾU &amp; IN HỒ SƠ</button>
-  <span class="hint" style="text-align:center" id="fPrintNote"></span>
+  <div class="xd-2b"><button class="btn cta out" id="fPrintBtn">LƯU VÀ IN PHIẾU</button><button class="btn cta pri" id="fPkdBtn">LƯU VÀ IN PKD LẦU 1</button></div>
+  <span class="hint" style="text-align:center"><span id="fPrintNote"></span><br><span id="fPkdSt">Máy in PKD lầu 1: lưu phiếu và in thẳng ra máy in Phòng Kinh Doanh, không cần kết nối điện thoại.</span></span>
 </div></div>
 
 <!-- Bước 2: lên xe / trả xe -->
@@ -185,6 +202,7 @@
   <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:8px"><div style="display:flex;flex-direction:column;gap:2px"><span class="lbl">Bước 2 · lên xe hoặc trả xe</span><div id="xdUseTitle" style="font-family:var(--display);font-size:24px;text-transform:uppercase;line-height:1.1"></div></div>
     <button class="btn sm" data-close="xdUseDlg">Đóng</button></div>
   <div class="card flat" id="xdUseInfo" style="display:flex;justify-content:space-between;gap:8px;font-size:12px;padding:10px 12px"></div>
+  <div class="xd-2b xd-in2"><button class="btn out" id="uReprint">In trên máy này</button><button class="btn pri" id="uPkd">In PKD lầu 1</button></div>
   <div class="xd-2"><label class="field"><span class="lbl">ODO đi <span class="req">*</span></span><input class="inp mono" id="uOdoDi" inputmode="numeric"></label>
     <label class="field"><span class="lbl">ODO về <span class="req">*</span></span><input class="inp mono" id="uOdoVe" inputmode="numeric"></label></div>
   <span class="hint"><span id="uOdoHint"></span><br><b style="color:var(--ink)">Không nhớ ODO</b>: ghi “Không nhớ”.</span>
@@ -207,14 +225,29 @@
     <button class="btn out" id="uStartBtn" style="min-height:50px;font-weight:800;letter-spacing:.1em">LƯU ODO ĐI</button>
     <button class="btn pri" id="uReturnBtn" style="min-height:50px;font-weight:800;letter-spacing:.2em;grid-column:2">TRẢ XE</button></div>
   <div style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap">
-    <button class="btn sm" id="uLogBtn">Chuyến trước</button><button class="btn sm" id="uReprint">In hồ sơ</button><button class="btn sm" id="uEditBtn">Sửa phiếu</button><button class="btn sm" id="uCancelBtn" style="color:var(--bad)">Hủy phiếu</button></div>
+    <button class="btn sm" id="uLogBtn">Chuyến trước</button><button class="btn sm" id="uEditBtn">Sửa phiếu</button><button class="btn sm" id="uCancelBtn" style="color:var(--bad)">Hủy phiếu</button></div>
+</div></div>
+
+<!-- In hồ sơ: máy in Phòng Kinh Doanh lầu 1 (trạm in) hoặc máy này -->
+<div class="sheet-bg" id="xdInDlg" hidden><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="xdInH"><div class="grab"></div>
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><div style="display:flex;flex-direction:column;gap:2px"><span class="lbl" id="xdInId"></span><div id="xdInH" style="font-family:var(--display);font-size:22px;text-transform:uppercase">In hồ sơ</div></div><button class="btn sm" data-close="xdInDlg">Đóng</button></div>
+  <div id="inChon" style="display:flex;flex-direction:column;gap:10px">
+    <div class="xd-tram" id="inTram"><i></i><span>Đang kiểm tra máy in Phòng Kinh Doanh lầu 1…</span></div>
+    <button class="btn cta pri" id="inCongTy">MÁY IN PKD LẦU 1</button>
+    <button class="btn out" id="inMay">In trên máy này</button>
+    <span class="hint" style="text-align:center">In thẳng ra máy in Phòng Kinh Doanh lầu 1, không cần kết nối điện thoại với máy in.</span>
+  </div>
+  <div id="inCho" hidden style="display:flex;flex-direction:column;gap:10px">
+    <div class="xd-instt" id="inStt"></div>
+    <button class="btn out" id="inMay2">In trên máy này</button>
+  </div>
 </div></div>
 
 <script src="config.js"></script>
 <script src="https://giangnvtsamco.github.io/samco-core/v1/api.js"></script>
 <script src="https://giangnvtsamco.github.io/samco-core/v1/ui.js?v=1.1"></script>
-<script src="print.js?v=1.1.0"></script>
-<script src="app.js?v=1.1.0"></script>
+<script src="print.js?v=1.3.0"></script>
+<script src="app.js?v=1.3.0"></script>
 <script>XD.start();</script>
 </body>
 </html>

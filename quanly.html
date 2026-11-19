@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <title>Quản lý · Xe Demo SAMCO</title>
 <meta name="description" content="Quản lý xe lái thử">
@@ -20,6 +20,9 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&family=Tinos:ital,wght@0,400;0,700;1,400&family=Arimo:wght@400;700&display=swap">
 <link rel="stylesheet" href="https://giangnvtsamco.github.io/samco-core/v1/style.css?v=1.1">
 <style>
+  /* trải nghiệm như app: chạm 2 lần không phóng to, không nháy xanh khi chạm */
+  html{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+  button,a,label,.xd-car{-webkit-tap-highlight-color:transparent}
   [hidden]{display:none!important}
   .req{color:var(--bad)}
   .loginbox{max-width:380px;margin:12vh auto 0;display:flex;flex-direction:column;gap:18px;padding:0 16px}
@@ -99,6 +102,16 @@
     <div id="huyBox"></div>
     <div id="lechBox"></div>
     <div class="tbl-wrap"><table class="tbl xe-tbl"><thead><tr><th>Xe</th><th>Biển số</th><th class="num">ODO</th><th class="num">Pin</th><th>Tình trạng</th><th class="num">Chuyến tháng</th><th class="num">Km tháng</th><th class="num">ODO lệch</th><th>Dùng gần nhất</th><th>Hạn xe</th></tr></thead><tbody id="xeBody"><tr><td colspan="9"><div class="loading"><span class="spin"></span>Đang tải…</div></td></tr></tbody></table></div>
+    <div class="box" id="giuBox" style="gap:8px">
+      <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
+        <label class="field" style="flex:1;min-width:240px"><span class="lbl">Người giữ xe cố định · <span id="giuXe"></span></span>
+          <input class="inp" id="giuTen" list="giuDm" maxlength="60" placeholder="Để trống: xe dùng chung · VD: Giám đốc, XMĐ"></label>
+        <button class="btn" id="giuLuu">Lưu</button>
+        <button class="btn pri" id="giuOdoBtn">Ghi ODO định kỳ</button>
+      </div>
+      <datalist id="giuDm"><option value="Giám đốc"><option value="XMĐ"></datalist>
+      <span class="hint" id="giuHint"></span>
+    </div>
     <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:8px;flex-wrap:wrap">
       <span class="sect" id="lgHead">Nhật trình</span>
       <span class="hint">Ô đỏ: ODO đi khác lần trả trước. Sửa ODO phải ghi lý do; Sheet lưu lại giá trị cũ.</span>
@@ -224,6 +237,19 @@
   <button class="btn cta pri" id="sacSave">Lưu</button>
 </div></div>
 
+<!-- Ghi ODO định kỳ (xe có người giữ) -->
+<div class="sheet-bg" id="odoDlg" hidden><div class="sheet"><div class="grab"></div>
+  <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-family:var(--display);font-size:24px;text-transform:uppercase">Ghi ODO định kỳ</span><button class="btn sm" data-close="odoDlg">Đóng</button></div>
+  <span class="small" id="odoXe"></span>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+    <label class="field"><span class="lbl">ODO hiện tại <span class="req">*</span></span><input class="inp mono" id="odoVal" inputmode="numeric"></label>
+    <label class="field"><span class="lbl">Pin %</span><input class="inp mono" id="odoPin" inputmode="numeric" maxlength="3"></label>
+    <label class="field"><span class="lbl">Ngày xem xe</span><input class="inp mono" id="odoNgay" type="date"></label></div>
+  <span class="hint" id="odoKm">Km = ODO mới − ODO lần trước. Ghi vào nhật trình 1 dòng “Ghi ODO”.</span>
+  <label class="field"><span class="lbl">Ghi chú</span><input class="inp" id="odoGhi" maxlength="200" placeholder="VD: Kiểm tra cuối tháng, xe sạch, không lỗi"></label>
+  <button class="btn cta pri" id="odoSave">Lưu</button>
+</div></div>
+
 <!-- Thêm lượt -->
 <div class="sheet-bg" id="addDlg" hidden><div class="sheet"><div class="grab"></div>
   <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-family:var(--display);font-size:22px;text-transform:uppercase">Thêm lượt không có phiếu</span><button class="btn sm" data-close="addDlg">Đóng</button></div>
@@ -249,7 +275,7 @@
 XP.init({ base: '' });
 let PIN = (() => { try { return sessionStorage.getItem('xedemo_admin') || ''; } catch (e) { return ''; } })();
 let Q = null, sel = '', HS = [], hsPick = new Set(), pvPages = null, BC = null;
-const ST_CHIP = { san: 'ok', sac: 'warn', di: 'acc', dat: 'acc', dv: 'warn', ngung: 'mute' };
+const ST_CHIP = { san: 'ok', sac: 'warn', di: 'acc', dat: 'acc', dv: 'warn', ngung: 'mute', giu: 'warn' };
 const pad = n => String(n).padStart(2, '0');
 const today = () => { const d = new Date(); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); };
 const LOAI = () => { const o = {}; (Q ? Q.cars : []).forEach(c => o[c.bien] = c.loai); return o; };
@@ -270,7 +296,7 @@ $('#lgBtn').onclick = () => busy($('#lgBtn'), 'Đang kiểm tra', async () => {
 $('#lgPin').addEventListener('keydown', e => { if (e.key === 'Enter') $('#lgBtn').click(); });
 // đủ 4 số là tự vào, không cần bấm nút
 $('#lgPin').addEventListener('input', () => { const v = $('#lgPin').value.trim(); if (/^\d{4}$/.test(v) && !$('#lgBtn').disabled) $('#lgBtn').click(); });
-appFoot('Xe Demo · Quản lý', '1.2.0', $('#appFoot'));
+appFoot('Xe Demo · Quản lý', '1.3.0', $('#appFoot'));
 $('#btnOut').onclick = () => { PIN = ''; try { sessionStorage.removeItem('xedemo_admin'); } catch (e) {} showLogin(); };
 function start() { $('#vLogin').hidden = true; $('#vApp').hidden = false; load(); }
 
@@ -311,7 +337,7 @@ function renderXe() {
     <td><span class="chip ${ST_CHIP[c.st] || 'mute'}">${esc(c.label)}</span></td><td class="num">${c.chuyen}</td><td class="num">${num(c.km)}</td>
     <td class="num" style="${c.lech ? 'color:var(--bad);font-weight:700' : ''}">${c.lech}</td><td class="small">${esc(c.cuoi || '—')}${c.ngayCuoi && Q.today - c.ngayCuoi > 30 ? ' <b style="color:var(--warn)">· ' + (Q.today - c.ngayCuoi) + ' ngày chưa dùng</b>' : ''}</td><td class="small" style="white-space:nowrap">${hanCell(c)}</td></tr>`).join('');
   const car = Q.cars.find(c => c.bien === sel) || {};
-  renderHan(); renderHuy();
+  renderHan(); renderHuy(); renderGiu();
   $('#lgHead').textContent = 'Nhật trình · ' + (car.loai || '') + ' ' + sel;
   $('#lgBody').innerHTML = Q.rows.length ? Q.rows.map(r => {
     const edit = r.trangThai === 'Đã trả';
@@ -425,6 +451,34 @@ $('#dvBox').addEventListener('click', e => {
   const b = e.target.closest('[data-nhan]'); if (!b) return;
   const row = b.closest('[data-lt]');
   busy(b, '', async () => { try { await call('adminDvReturn', PIN, row.dataset.lt, { odoVe: $('[data-k=odo]', row).value, pin: $('[data-k=pin]', row).value.trim() }); toast('Đã nhận lại xe'); load(); } catch (err) { toast(err, 1); } });
+});
+
+/* Xe giao cố định: người giữ + ghi ODO định kỳ */
+function renderGiu() {
+  const c = Q.cars.find(x => x.bien === sel) || {};
+  $('#giuXe').textContent = (c.loai || '') + ' ' + (c.bien || '');
+  $('#giuTen').value = c.giu || '';
+  $('#giuOdoBtn').hidden = !c.giu;
+  $('#giuHint').innerHTML = c.giu
+    ? '<b>' + esc(c.giu) + '</b> đang giữ xe. Sale vẫn lập phiếu được, app nhắc hỏi ' + esc(c.giu) + ' trước. Vẫn nhắc hạn bảo hiểm, đăng kiểm và lập lệnh dịch vụ như xe khác. Km tháng tính theo các lần Ghi ODO định kỳ.'
+    : 'Xe dùng chung. Nhập tên người hoặc bộ phận giữ xe (VD: Giám đốc, XMĐ) nếu xe được giao cố định.';
+}
+$('#giuLuu').onclick = () => busy($('#giuLuu'), '', async () => {
+  try { const r = await call('adminXeGiu', PIN, sel, $('#giuTen').value); toast(r.giu ? 'Đã lưu: ' + r.giu + ' giữ xe ' + r.bien : 'Đã chuyển xe ' + r.bien + ' về dùng chung'); load(sel); }
+  catch (e) { if (!authFail(e)) toast(e, 1); }
+});
+$('#giuOdoBtn').onclick = () => {
+  const c = Q.cars.find(x => x.bien === sel) || {};
+  $('#odoXe').innerHTML = '<b>' + esc(c.loai) + ' ' + esc(c.bien) + '</b> · ' + esc(c.giu) + ' giữ · ODO lần trước: <b class="mono">' + (c.odo === '' ? '—' : num(c.odo)) + '</b>';
+  $('#odoVal').value = ''; $('#odoPin').value = ''; $('#odoGhi').value = '';
+  const d = new Date(); $('#odoNgay').value = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  $('#odoKm').textContent = 'Km = ODO mới − ODO lần trước. Ghi vào nhật trình 1 dòng “Ghi ODO”.';
+  $('#odoVal').oninput = () => { const v = Number(String($('#odoVal').value).replace(/\D/g, '')), t = Number(c.odo); $('#odoKm').textContent = v && c.odo !== '' ? (v >= t ? 'Từ lần trước đến nay: ' + num(v - t) + ' km' : 'ODO mới nhỏ hơn lần trước (' + num(t) + ')') : 'Km = ODO mới − ODO lần trước.'; };
+  openDlg('odoDlg');
+};
+$('#odoSave').onclick = () => busy($('#odoSave'), 'Đang lưu', async () => {
+  try { const r = await call('adminXeOdo', PIN, sel, { odo: $('#odoVal').value, pin: $('#odoPin').value, ngay: $('#odoNgay').value, ghiChu: $('#odoGhi').value }); closeDlg('odoDlg'); toast('Đã ghi ODO' + (r.km !== '' ? ' · ' + num(r.km) + ' km' : '')); load(sel); }
+  catch (e) { if (!authFail(e)) toast(e, 1); }
 });
 
 /* Ghi sạc pin */
