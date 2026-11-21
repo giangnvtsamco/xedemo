@@ -2,13 +2,59 @@
    Cần nạp trước: config.js, samco-core api.js + ui.js, print.js. */
 (function () {
   const pad = n => String(n).padStart(2, '0');
-  const isoNow = (addMin) => { const d = new Date(Date.now() + (addMin || 0) * 60000); d.setMinutes(Math.ceil(d.getMinutes() / 5) * 5, 0, 0); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes()); };
-  const hmNow = () => { const d = new Date(); return pad(d.getHours()) + ':' + pad(d.getMinutes()); };
+  const isoOf = d => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+  const parseIso = s => { const m = String(s || '').match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/); return m ? new Date(+m[1], m[2] - 1, +m[3], +m[4], +m[5]) : null; };
+
+  /* ---------- Chọn thời gian: ngày ở giữa phía trên · giờ (0–23) bên trái · phút 00/15/30/45 bên phải ---------- */
+  let tpDi = null, tpVe = null, tpGd = null;
+  const PHUT = [0, 15, 30, 45], IH = 44, THU = ['Chủ nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
+  const day0 = d => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const ngayTen = d => { const k = Math.round((day0(d) - day0(new Date())) / 864e5); return k === 0 ? 'Hôm nay' : k === 1 ? 'Ngày mai' : k === -1 ? 'Hôm qua' : THU[d.getDay()]; };
+  const ngayNgan = d => pad(d.getDate()) + '/' + pad(d.getMonth() + 1);
+  const tron15 = (d, len) => { const x = new Date(d); const m = x.getMinutes(); x.setMinutes(len ? Math.ceil(m / 15) * 15 : Math.round(m / 15) * 15, 0, 0); return x; };
+  function TP(el, onChange) {
+    let v = tron15(new Date());
+    el.innerHTML = `<div class="tp-day"><button type="button" data-d="-1" aria-label="Ngày trước">‹</button><label class="tp-date"><b></b><span></span><input type="date" tabindex="-1"></label><button type="button" data-d="1" aria-label="Ngày sau">›</button></div>
+      <div class="tp-wh"><div class="tp-col"><span class="tp-l">Giờ</span><div class="tp-box"><div class="tp-w" data-k="h">${Array.from({ length: 24 }, (_, i) => `<div data-i="${i}">${pad(i)}</div>`).join('')}</div></div></div>
+      <span class="tp-colon">:</span>
+      <div class="tp-col"><span class="tp-l">Phút</span><div class="tp-box"><div class="tp-w" data-k="m">${PHUT.map((m, i) => `<div data-i="${i}">${pad(m)}</div>`).join('')}</div></div></div></div>`;
+    const wh = el.querySelector('[data-k=h]'), wm = el.querySelector('[data-k=m]'), di = el.querySelector('input[type=date]');
+    let tu = false; // đang tự cuộn theo giá trị (không coi là người chọn)
+    function draw() {
+      el.querySelector('.tp-date b').textContent = ngayTen(v);
+      el.querySelector('.tp-date span').textContent = ngayNgan(v) + '/' + v.getFullYear();
+      di.value = v.getFullYear() + '-' + pad(v.getMonth() + 1) + '-' + pad(v.getDate());
+      [...wh.children].forEach((x, i) => x.classList.toggle('on', i === v.getHours()));
+      [...wm.children].forEach((x, i) => x.classList.toggle('on', PHUT[i] === v.getMinutes()));
+    }
+    function place() { tu = true; wh.scrollTop = v.getHours() * IH; wm.scrollTop = PHUT.indexOf(v.getMinutes()) * IH; setTimeout(() => { tu = false; }, 150); }
+    const doi = () => { draw(); if (onChange) onChange(new Date(v)); };
+    [[wh, 'h'], [wm, 'm']].forEach(([w, k]) => {
+      let t = 0;
+      w.addEventListener('scroll', () => {
+        if (tu) return; clearTimeout(t);
+        t = setTimeout(() => {
+          const i = Math.max(0, Math.min(w.children.length - 1, Math.round(w.scrollTop / IH)));
+          if (k === 'h' && i !== v.getHours()) { v.setHours(i); doi(); }
+          if (k === 'm' && PHUT[i] !== v.getMinutes()) { v.setMinutes(PHUT[i]); doi(); }
+        }, 90);
+      });
+      w.addEventListener('click', e => { const it = e.target.closest('[data-i]'); if (it) w.scrollTo({ top: +it.dataset.i * IH, behavior: 'smooth' }); });
+    });
+    el.querySelector('.tp-day').addEventListener('click', e => {
+      const b = e.target.closest('[data-d]');
+      if (b) { v.setDate(v.getDate() + +b.dataset.d); return doi(); }
+      if (e.target.closest('.tp-date')) { e.preventDefault(); try { di.showPicker(); } catch (x) { di.focus(); } }
+    });
+    di.addEventListener('change', () => { const m = di.value.match(/^(\d{4})-(\d{2})-(\d{2})$/); if (m) { v.setFullYear(+m[1], m[2] - 1, +m[3]); doi(); } });
+    draw();
+    return { get: () => new Date(v), set(d) { v = tron15(d); draw(); place(); }, sync: place };
+  }
   const TT = [['ngoai', 'Ngoại thất'], ['noi', 'Nội thất'], ['nhienLieu', 'Nhiên liệu · pin'], ['dauNhot', 'Dầu nhớt động cơ'], ['nuoc', 'Nước và dung dịch khác'], ['dien', 'Hệ thống điện'], ['lop', 'Lốp']];
   const KEY = 'xedemo_auth';
   let A = (() => { try { return JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { return null; } })();
   let D = null, STAFF = [], tab = 'xe', printCache = {};
-  const APP_V = '1.3.0', SITE = 'https://xedemo.vinfastsamcobinhtan.com/';
+  const APP_V = '1.4.0', SITE = 'https://xedemo.vinfastsamcobinhtan.com/';
   // Lưu bản dữ liệu gần nhất trên máy: mở app là thấy ngay, rồi cập nhật ngầm
   const cKey = () => 'xedemo_cache_' + (A && A.ten || '');
   const cacheGet = () => { try { return JSON.parse(localStorage.getItem(cKey()) || 'null'); } catch (e) { return null; } };
@@ -197,9 +243,13 @@
     $('#fDongY').checked = p ? p.dongY : false; $('#fTuLai').checked = p ? p.tuLai : true; $('#fXa').checked = p ? p.xa : false;
     const xa = D.duyetXa, goi = xa.ten ? xa.ten.split(/\s+/).pop() : '';
     $('#fXaWho').textContent = xa.can && goi && xa.ten !== D.duyetGan.ten ? ' · ' + (goi === 'Quang' ? 'anh Quang' : goi) + ' duyệt' : '';
-    v('fLoTrinh', p && p.loTrinh); v('fDiDk', p ? p.diDk : isoNow(10)); v('fVeDk', p ? p.veDk : isoNow(70));
+    v('fLoTrinh', p && p.loTrinh);
+    // đi dự kiến: mặc định 10 phút nữa (làm tròn lên mốc 15 phút) · thời gian dùng: mặc định 1 giờ
+    const di = p && parseIso(p.diDk) || tron15(new Date(Date.now() + 10 * 60000), true), ve = p && parseIso(p.veDk);
+    let phut = ve ? Math.max(30, Math.round((ve - di) / 60000)) : 60;
+    if (phut >= 1440 && phut % 1440 === 0) { DUR.u = 'd'; DUR.n = phut / 1440; } else { DUR.u = 'h'; DUR.n = Math.max(0.5, Math.round(phut / 30) / 2); }
     $$('#fPhoto button').forEach(b => { b.classList.remove('has'); b.textContent = b.dataset.side === 'truoc' ? 'Bằng lái mặt trước' : 'Mặt sau'; });
-    syncForm(); openS('xdFormDlg');
+    syncForm(); openS('xdFormDlg'); tpDi.set(di); veTxt();
     const st = $('#fPkdSt'); st.style.color = ''; st.textContent = 'Máy in PKD lầu 1: lưu phiếu và in thẳng ra máy in Phòng Kinh Doanh, không cần kết nối điện thoại.';
     api('inTram').then(t => { if (!t.bat) { st.style.color = 'var(--warn)'; st.textContent = 'Máy in PKD lầu 1 đang tắt: vẫn gửi được, máy bật là tự in (trong 6 giờ).'; } }).catch(() => {});
   }
@@ -217,13 +267,22 @@
   function formData() {
     return { bien: F.car.bien, mucDich: F.muc, kh: $('#fKh').value, sdt: $('#fSdt').value, diaChi: $('#fDiaChi').value, gplx: $('#fGplx').value, hanGplx: $('#fHan').value,
       dongY: $('#fDongY').checked, tuLai: $('#fTuLai').checked, anhTruoc: F.anhTruoc, anhSau: F.anhSau, loTrinh: $('#fLoTrinh').value, xa: $('#fXa').checked,
-      diDk: $('#fDiDk').value, veDk: $('#fVeDk').value };
+      diDk: isoOf(tpDi.get()), veDk: isoOf(veDk()) };
+  }
+  /* thời gian dự kiến sử dụng: số + đơn vị (giờ / ngày) → giờ về dự kiến = đi + thời gian dùng (in lên lệnh) */
+  const DUR = { n: 1, u: 'h' };
+  const veDk = () => new Date(tpDi.get().getTime() + DUR.n * (DUR.u === 'd' ? 1440 : 60) * 60000);
+  function veTxt() {
+    $('#fDur').value = String(DUR.n).replace('.', ',');
+    $$('#fDurU button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.u === DUR.u)));
+    const d = veDk();
+    $('#fVeTxt').innerHTML = 'Về dự kiến: <b>' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + ' · ' + ngayTen(d) + ' ' + ngayNgan(d) + '</b>';
   }
   async function saveForm(btn, thenPrint) {
     const d = formData();
     if (d.mucDich === 'Khách lái thử' && !d.kh.trim()) return toast('Vui lòng nhập họ tên khách.', 1);
     if (!d.loTrinh.trim()) return toast('Vui lòng nhập lộ trình hoặc nội dung.', 1);
-    if (!d.diDk || !d.veDk) return toast('Vui lòng nhập giờ đi và giờ về dự kiến.', 1);
+    if (!(DUR.n > 0)) return toast('Vui lòng nhập thời gian dự kiến sử dụng.', 1);
     return busy(btn, 'Đang lưu', async () => {
       try {
         const p = await api('xdSave', d, F.id);
@@ -306,13 +365,18 @@
     $('#xdUseInfo').innerHTML = `<span>${esc(p.muc)}${p.kh ? ' · ' + esc(p.kh) : ''}<br>${chipDuyet(p)}</span><span class="mono">${esc(p.diDkHm)}–${esc(p.veDkHm)}</span>`;
     $('#uOdoDi').value = p.odoDi || (car.odo === '' ? '' : car.odo);
     $('#uOdoHint').textContent = (car.odo !== '' ? 'ODO đi tự điền theo lần trả gần nhất (' + num(car.odo) + ') · sửa nếu khác. ' : '') + 'Có thể lưu ODO đi trước, ODO về điền sau.';
-    $('#uOdoVe').value = ''; $('#uGioDi').value = p.gioDi || (p.diDkHm && p.diDkHm < hmNow() ? p.diDkHm : hmNow()); $('#uGioVe').value = hmNow(); $('#uPin').value = ''; $('#uPinWarn').hidden = true;
+    $('#uOdoVe').value = ''; $('#uPin').value = ''; $('#uPinWarn').hidden = true;
+    // giờ đi: đã lưu ODO đi thì lấy giờ đã lưu · chưa thì giờ đi dự kiến (nếu đã qua) hoặc bây giờ
+    const dk = parseIso(p.diDk) || new Date(), now = new Date();
+    let gd = dk <= now ? dk : now;
+    if (p.gioDi) { const m = p.gioDi.match(/^(\d{2}):(\d{2})$/); if (m) { gd = new Date(dk); gd.setHours(+m[1], +m[2], 0, 0); } }
+    $('#uDiTp').hidden = true; $('#uDiSua').hidden = false;
     renderTt();
     $('#uTtGhi').value = ''; $('#uXacNhan').checked = false;
     $('#uKyWrap').hidden = p.muc !== 'Khách lái thử'; $('#uKy').checked = false; $('#uDon').checked = false; $('#uSac').checked = false; $('#uGhi').value = '';
     const reg = p.trangThai === 'Đã đăng ký';
     $('#uStartBtn').hidden = !reg; $('#uCancelBtn').hidden = !reg; $('#uEditBtn').hidden = !reg;
-    calcKm(); openS('xdUseDlg');
+    openS('xdUseDlg'); tpVe.set(now); tpGd.set(gd); calcKm();
   }
   function renderTt() {
     $('#uTt').innerHTML = TT.map(k => `<div class="xd-cond" data-k="${k[0]}"><span>${k[1]}</span><span style="display:flex;gap:4px">
@@ -323,18 +387,20 @@
   }
   function calcKm() {
     const a = Number(String($('#uOdoDi').value).replace(/[^\d]/g, '')), b = Number(String($('#uOdoVe').value).replace(/[^\d]/g, ''));
-    const g1 = $('#uGioDi').value, g2 = $('#uGioVe').value;
+    const g1 = tpGd.get(), g2 = tpVe.get(), m = Math.round((g2 - g1) / 60000);
+    $('#uDiTxt').textContent = pad(g1.getHours()) + ':' + pad(g1.getMinutes()) + ' · ' + ngayTen(g1) + ' ' + ngayNgan(g1);
     let t = '';
     if (a && b && b >= a) t = (b - a) + ' km';
-    if (g1 && g2) { let m = (+g2.slice(0, 2) * 60 + +g2.slice(3)) - (+g1.slice(0, 2) * 60 + +g1.slice(3)); if (m < 0) m += 1440; t += (t ? ' · ' : '') + Math.floor(m / 60) + ' giờ ' + (m % 60) + ' phút'; }
+    if (m >= 0) t += (t ? ' · ' : '') + (m >= 1440 ? Math.floor(m / 1440) + ' ngày ' : '') + Math.floor(m % 1440 / 60) + ' giờ ' + (m % 60) + ' phút';
     $('#uKm').textContent = t || '—';
-    const nguoc = g1 && g2 && g2 < g1;
+    const nguoc = m < 0;
     $('#uKm').style.color = nguoc ? 'var(--bad)' : '';
     if (nguoc) $('#uKm').textContent = 'Giờ về đang trước giờ đi · vui lòng kiểm tra';
   }
 
   /* ---------- Sự kiện ---------- */
   function bind() {
+    tpDi = TP($('#fDiTp'), veTxt); tpVe = TP($('#uVeTp'), calcKm); tpGd = TP($('#uDiTp'), calcKm);
     $('#who').onchange = onWho;
     $('#goBtn').onclick = () => { const ten = $('#who').value; if (!ten) return toast('Vui lòng chọn họ tên.', 1); A = { ten }; save(); enter(); };
     $('#pinPad').onclick = e => {
@@ -376,7 +442,13 @@
     };
     $('#fPrintBtn').onclick = () => saveForm($('#fPrintBtn'), 'may');
     $('#fPkdBtn').onclick = () => saveForm($('#fPkdBtn'), 'pkd');
-    ['#uOdoDi', '#uOdoVe', '#uGioDi', '#uGioVe'].forEach(s => $(s).addEventListener('input', calcKm));
+    ['#uOdoDi', '#uOdoVe'].forEach(s => $(s).addEventListener('input', calcKm));
+    $('#uDiSua').onclick = () => { $('#uDiTp').hidden = false; $('#uDiSua').hidden = true; tpGd.sync(); };
+    // thời gian dự kiến sử dụng
+    $('#fDur').addEventListener('input', () => { const n = Number(String($('#fDur').value).replace(',', '.')); if (n > 0) { DUR.n = n; const d = veDk(); $('#fVeTxt').innerHTML = 'Về dự kiến: <b>' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + ' · ' + ngayTen(d) + ' ' + ngayNgan(d) + '</b>'; } });
+    $('#fDur').addEventListener('change', veTxt);
+    $$('.xd-step button').forEach(b => b.onclick = () => { const st = DUR.u === 'd' ? 1 : 0.5; DUR.n = Math.max(st, Math.min(DUR.u === 'd' ? 30 : 72, (Math.round(DUR.n / st) + +b.dataset.st) * st)); veTxt(); });
+    $('#fDurU').onclick = e => { const b = e.target.closest('[data-u]'); if (!b || b.dataset.u === DUR.u) return; DUR.u = b.dataset.u; DUR.n = DUR.u === 'd' ? Math.max(1, Math.round(DUR.n / 24)) : Math.min(72, DUR.n * 24); veTxt(); };
     // Pin dưới 80%: nhắc bắt buộc sạc lên trên 90% (quy tắc VinFast)
     const PIN_SAC = 80;
     $('#uPin').addEventListener('input', () => { const v = $('#uPin').value.trim(); $('#uPinWarn').hidden = !(v !== '' && Number(v) < PIN_SAC); });
@@ -384,14 +456,14 @@
     $('#uStartBtn').onclick = () => {
       const odo = $('#uOdoDi').value.trim(); if (!odo) return toast('Vui lòng nhập ODO đi.', 1);
       busy($('#uStartBtn'), '', async () => {
-        try { await api('xdStart', U.id, { odoDi: odo, gioDi: $('#uGioDi').value }); closeS('xdUseDlg'); toast('Đã lưu ODO đi. Chúc chuyến đi an toàn.'); load(); } catch (e) { fail(e); }
+        try { await api('xdStart', U.id, { odoDi: odo, gioDi: isoOf(tpGd.get()) }); closeS('xdUseDlg'); toast('Đã lưu ODO đi. Chúc chuyến đi an toàn.'); load(); } catch (e) { fail(e); }
       });
     };
     $('#uReturnBtn').onclick = () => {
-      const d = Object.assign({ odoDi: $('#uOdoDi').value.trim(), odoVe: $('#uOdoVe').value.trim(), gioDi: $('#uGioDi').value, gioVe: $('#uGioVe').value, pin: $('#uPin').value.trim(),
+      const d = Object.assign({ odoDi: $('#uOdoDi').value.trim(), odoVe: $('#uOdoVe').value.trim(), gioDi: isoOf(tpGd.get()), gioVe: isoOf(tpVe.get()), pin: $('#uPin').value.trim(),
         ttGhi: $('#uTtGhi').value.trim(), xacNhan: $('#uXacNhan').checked, daKy: $('#uKy').checked, daDon: $('#uDon').checked, daSac: $('#uSac').checked, ghiChu: $('#uGhi').value }, TTV);
       if (!d.odoDi || !d.odoVe) return toast('Vui lòng nhập ODO đi và ODO về (không nhớ thì ghi “Không nhớ”).', 1);
-      if (!d.gioDi || !d.gioVe) return toast('Vui lòng nhập giờ đi và giờ về.', 1);
+      if (tpVe.get() < tpGd.get()) return toast('Thời gian về đang trước giờ đi. Vui lòng kiểm tra lại.', 1);
       if (d.pin === '') return toast('Vui lòng nhập % pin lúc về.', 1);
       const thieu = TT.filter(k => !TTV[k[0]]); if (thieu.length) return toast('Vui lòng chọn Đạt / Không đạt cho: ' + thieu.map(k => k[1]).join(', '), 1);
       if (TT.some(k => TTV[k[0]] === 'Không đạt') && !d.ttGhi) return toast('Có mục Không đạt: vui lòng ghi chú tình trạng xe.', 1);

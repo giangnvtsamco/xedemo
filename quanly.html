@@ -296,7 +296,7 @@ $('#lgBtn').onclick = () => busy($('#lgBtn'), 'Đang kiểm tra', async () => {
 $('#lgPin').addEventListener('keydown', e => { if (e.key === 'Enter') $('#lgBtn').click(); });
 // đủ 4 số là tự vào, không cần bấm nút
 $('#lgPin').addEventListener('input', () => { const v = $('#lgPin').value.trim(); if (/^\d{4}$/.test(v) && !$('#lgBtn').disabled) $('#lgBtn').click(); });
-appFoot('Xe Demo · Quản lý', '1.3.0', $('#appFoot'));
+appFoot('Xe Demo · Quản lý', '1.4.0', $('#appFoot'));
 $('#btnOut').onclick = () => { PIN = ''; try { sessionStorage.removeItem('xedemo_admin'); } catch (e) {} showLogin(); };
 function start() { $('#vLogin').hidden = true; $('#vApp').hidden = false; load(); }
 
